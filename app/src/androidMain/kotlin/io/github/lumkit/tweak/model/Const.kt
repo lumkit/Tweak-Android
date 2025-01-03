@@ -1,6 +1,7 @@
 package io.github.lumkit.tweak.model
 
 object Const {
+    const val APP_OVERVIEW_TICK: String = "app_overview_tick"
     const val APP_SHELL_ROOT_USER: String = "app_shell_root_user"
     const val APP_ACCEPT_RISK: String = "app_accept_risk"
     const val APP_SHARED_RUNTIME_MODE_STATE: String = "runtime_mode_state"

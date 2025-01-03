@@ -10,7 +10,7 @@ class StorageStore {
 
     infix fun getString(name: String): String? = shared.getString(name, null)
     infix fun getBoolean(name: String): Boolean = shared.getBoolean(name, false)
-    infix fun getInt(name: String): Int = shared.getInt(name, 0)
+    fun getInt(name: String, default: Int = 0): Int = shared.getInt(name, default)
     infix fun getFloat(name: String): Float = shared.getFloat(name, 0f)
     infix fun getStringSet(name: String): Set<String>? = shared.getStringSet(name, emptySet())
 

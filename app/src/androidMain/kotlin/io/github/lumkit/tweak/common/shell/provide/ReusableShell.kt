@@ -1,4 +1,4 @@
-package io.github.lumkit.tweak.common.shell
+package io.github.lumkit.tweak.common.shell.provide
 
 import android.util.Log
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -20,7 +20,7 @@ import java.io.BufferedWriter
  * @param user 用户身份，可以是是、su、suu
  */
 class ReusableShell(
-    private val user: String,
+    val user: String,
 ) {
     companion object {
         private const val CHECK_ROOT_STATE =

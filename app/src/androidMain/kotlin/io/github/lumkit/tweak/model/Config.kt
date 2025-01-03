@@ -16,4 +16,9 @@ object Config {
         val BusyboxFile: File
             get() = File(binDir, "busybox")
     }
+
+    val ROOT_USERS = listOf(
+        "su",
+        "suu"
+    )
 }

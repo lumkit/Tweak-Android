@@ -12,8 +12,8 @@ import androidx.core.app.ActivityCompat
 import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.common.BaseViewModel
 import io.github.lumkit.tweak.common.permissions.checkPermission
-import io.github.lumkit.tweak.common.shell.ReusableShells
-import io.github.lumkit.tweak.common.shell.RuntimeProvider
+import io.github.lumkit.tweak.common.shell.provide.ReusableShells
+import io.github.lumkit.tweak.common.shell.provide.RuntimeProvider
 import io.github.lumkit.tweak.common.status.TweakException
 import io.github.lumkit.tweak.model.Config
 import io.github.lumkit.tweak.model.Const

@@ -1,4 +1,4 @@
-package io.github.lumkit.tweak.common.shell
+package io.github.lumkit.tweak.common.shell.provide
 
 object RuntimeProvider {
     private var workPath: String = ""

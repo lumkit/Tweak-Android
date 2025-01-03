@@ -19,13 +19,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -33,6 +38,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,15 +54,19 @@ import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.LocalHazeStyle
 import io.github.lumkit.tweak.LocalScreenNavigationController
 import io.github.lumkit.tweak.R
+import io.github.lumkit.tweak.common.shell.provide.ReusableShells
 import io.github.lumkit.tweak.common.util.makeText
+import io.github.lumkit.tweak.model.Config
 import io.github.lumkit.tweak.model.Const
 import io.github.lumkit.tweak.ui.component.AnimatedLogo
 import io.github.lumkit.tweak.ui.component.FolderItem
 import io.github.lumkit.tweak.ui.local.LocalStorageStore
 import io.github.lumkit.tweak.ui.local.StorageStore
 import io.github.lumkit.tweak.ui.screen.ScreenRoute
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 @Composable
 fun RuntimeModeScreen(
@@ -288,6 +298,7 @@ private fun CheckPermissionsDialog(
     activity: ComponentActivity,
     storageStore: StorageStore
 ) {
+    val ioScope = rememberCoroutineScope{ Dispatchers.IO }
     val initConfigDialogState by viewModel.initConfigDialogState.collectAsStateWithLifecycle()
     val initConfigDialogMessage by viewModel.initConfigDialogMessage.collectAsStateWithLifecycle()
     val permissionState by viewModel.permissionState.collectAsStateWithLifecycle()
@@ -325,7 +336,73 @@ private fun CheckPermissionsDialog(
                                 Text(text = stringResource(R.string.text_init_app_success))
                             }
                             RuntimeModeViewModel.PermissionState.RetryCheckRoot -> {
-                                Text(text = initConfigDialogMessage)
+                                Column {
+                                    var userId by remember { mutableStateOf("su") }
+
+                                    LaunchedEffect(Unit) {
+                                        userId = storageStore.getString(Const.APP_SHELL_ROOT_USER) ?: "su"
+                                    }
+
+                                    Text(text = initConfigDialogMessage)
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Text(
+                                                text = stringResource(R.string.text_change_root_user),
+                                                style = MaterialTheme.typography.bodyMedium
+                                            )
+                                            Text(
+                                                text = String.format("%s: %s", stringResource(R.string.text_change_root_user_tip), userId),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.outline
+                                            )
+                                        }
+                                        Column {
+                                            var expanded by remember { mutableStateOf(false) }
+
+                                            TextButton(
+                                                onClick = {
+                                                    expanded = true
+                                                }
+                                            ) {
+                                                Text(text = stringResource(R.string.text_change_user))
+                                            }
+
+                                            DropdownMenu(
+                                                expanded = expanded,
+                                                onDismissRequest = { expanded = false }
+                                            ) {
+                                                Config.ROOT_USERS.forEach { id ->
+                                                    DropdownMenuItem(
+                                                        leadingIcon = {
+                                                            Checkbox(
+                                                                checked = id == userId,
+                                                                onCheckedChange = null
+                                                            )
+                                                        },
+                                                        text = {
+                                                            Text(text = id)
+                                                        },
+                                                        onClick = {
+                                                            ioScope.launch {
+                                                                userId = id
+                                                                // 切换所有用户
+                                                                ReusableShells.changeUserIdAtAll(id)
+                                                                println(ReusableShells.getDefaultInstance.user)
+                                                                expanded = false
+                                                            }
+                                                        },
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

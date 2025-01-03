@@ -1,9 +1,11 @@
 package io.github.lumkit.tweak.ui.component
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -54,8 +56,8 @@ private fun PreviewIndicator() {
     }
 }
 
-val midColor: Color = Color(0xFFFC8A1B).copy(alpha = .75f)
-val highColor: Color = Color(0xFFF9592F).copy(alpha = .75f)
+val midColor: Color = Color(0xFFFC8A1B).copy(alpha = .6f)
+val highColor: Color = Color(0xFFF9592F).copy(alpha = .6f)
 
 /**
  * 计算弦高（Sagitta）
@@ -85,15 +87,15 @@ fun CircleIndicator(
     val density = LocalDensity.current
 
     val targetIndicatorValue by animateFloatAsState(
-        targetValue = if (progress <= .005f) .5f else progress,
-        animationSpec = spring(stiffness = Spring.StiffnessLow)
+        targetValue = if (progress <= .05f) .05f else progress,
+        animationSpec = tween(durationMillis = 400)
     )
 
     val indicatorColor by animateColorAsState(
         targetValue = when (progress) {
             in .5f .. .80f -> midColor
             in .80f .. 1f -> highColor
-            else -> foregroundColor
+            else -> foregroundColor.copy(alpha = .6f)
         }
     )
 
@@ -164,15 +166,15 @@ fun HorizontalIndicator(
 ) {
 
     val progressWidthAnimation by animateFloatAsState(
-        targetValue = if (progress <= .005f) .5f else progress,
-        animationSpec = spring(stiffness = Spring.StiffnessLow)
+        targetValue = if (progress <= .05f) .05f else progress,
+        animationSpec = tween(durationMillis = 400)
     )
 
     val indicatorColor by animateColorAsState(
         targetValue = when (progress) {
             in .5f .. .80f -> midColor
             in .80f .. 1f -> highColor
-            else -> color
+            else -> color.copy(alpha = .6f)
         }
     )
 

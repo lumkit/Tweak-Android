@@ -1,9 +1,7 @@
-package io.github.lumkit.tweak.common.shell
+package io.github.lumkit.tweak.common.shell.provide
 
 import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.model.Const
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
 
 object ReusableShells {
@@ -26,6 +24,11 @@ object ReusableShells {
             shells[key]?.also { it.tryExit() }
             shells.remove(key)
         }
+    }
+
+    fun changeUserIdAtAll(id: String) {
+        TweakApplication.shared.edit().putString(Const.APP_SHELL_ROOT_USER, id).apply()
+        destroyAll()
     }
 
     fun destroyAll() {
