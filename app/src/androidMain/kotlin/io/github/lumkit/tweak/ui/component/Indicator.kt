@@ -1,12 +1,8 @@
 package io.github.lumkit.tweak.ui.component
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -47,10 +43,10 @@ private fun PreviewIndicator() {
         CircleIndicator(
             circleDiameter = 95.dp,
             backgroundIndicatorStrokeWidth = 4.dp,
-            progress = 1f
+            progress = 0f
         )
         HorizontalIndicator(
-            progress = .5f,
+            progress = .0f,
             modifier = Modifier.size(95.dp, 8.dp)
         )
     }
@@ -87,7 +83,7 @@ fun CircleIndicator(
     val density = LocalDensity.current
 
     val targetIndicatorValue by animateFloatAsState(
-        targetValue = if (progress <= .05f) .05f else progress,
+        targetValue = if (progress <= .005f) .005f else progress,
         animationSpec = tween(durationMillis = 400)
     )
 
@@ -166,7 +162,7 @@ fun HorizontalIndicator(
 ) {
 
     val progressWidthAnimation by animateFloatAsState(
-        targetValue = if (progress <= .05f) .05f else progress,
+        targetValue = if (progress <= .08f) .08f else progress,
         animationSpec = tween(durationMillis = 400)
     )
 

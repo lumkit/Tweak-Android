@@ -29,4 +29,5 @@
     <string name="text_change_root_user">切换ROOT命令</string>
     <string name="text_change_root_user_tip">当前</string>
     <string name="text_change_user">切换命令</string>
+    <string name="text_cpu_composition">簇集</string>
 </resources>

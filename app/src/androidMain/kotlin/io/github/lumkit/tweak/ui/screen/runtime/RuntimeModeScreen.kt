@@ -23,7 +23,6 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -393,7 +392,6 @@ private fun CheckPermissionsDialog(
                                                                 userId = id
                                                                 // 切换所有用户
                                                                 ReusableShells.changeUserIdAtAll(id)
-                                                                println(ReusableShells.getDefaultInstance.user)
                                                                 expanded = false
                                                             }
                                                         },

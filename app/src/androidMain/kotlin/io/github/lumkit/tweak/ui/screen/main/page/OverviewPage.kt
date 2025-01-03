@@ -3,30 +3,44 @@ package io.github.lumkit.tweak.ui.screen.main.page
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.FlowRowScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -36,8 +50,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.lumkit.tweak.R
 import io.github.lumkit.tweak.common.util.autoUnit
 import io.github.lumkit.tweak.model.Const
+import io.github.lumkit.tweak.ui.component.ChartState
 import io.github.lumkit.tweak.ui.component.CircleIndicator
 import io.github.lumkit.tweak.ui.component.HorizontalIndicator
+import io.github.lumkit.tweak.ui.component.LintStackChart
 import io.github.lumkit.tweak.ui.component.PlainTooltipBox
 import io.github.lumkit.tweak.ui.component.RichTooltipBox
 import io.github.lumkit.tweak.ui.local.LocalStorageStore
@@ -364,6 +380,180 @@ private fun GpuCard(viewModel: OverviewViewModel, storageStore: StorageStore) {
 @Composable
 private fun SocCard(viewModel: OverviewViewModel, storageStore: StorageStore) {
 
+    LaunchedEffect(Unit) {
+        while (isActive) {
+            viewModel.loadCpuDetailState()
+            delay(storageStore.getInt(Const.APP_OVERVIEW_TICK, 2000).toLong())
+        }
+    }
+
+    OutlinedCard(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.outlinedCardColors()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(90.dp),
+            ) {
+                ServicesBar(viewModel)
+                Spacer(modifier = Modifier.width(8.dp))
+                VerticalDivider(modifier = Modifier.padding(bottom = 12.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                CpuTotalBar(viewModel)
+            }
+            HorizontalDivider()
+            CpuLoadBar(viewModel)
+        }
+    }
+}
+
+@Composable
+private fun RowScope.ServicesBar(viewModel: OverviewViewModel) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .weight(1f)
+    ) {
+
+    }
+}
+
+@SuppressLint("DefaultLocale")
+@Composable
+private fun RowScope.CpuTotalBar(viewModel: OverviewViewModel) {
+
+    val cpuDetailState by viewModel.cpuDetailState.collectAsStateWithLifecycle()
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .weight(1f)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f)
+            ) {
+                Text(
+                    text = cpuDetailState.cpuName,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+                LintStackChart(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .alpha(.4f),
+                    state = ChartState(progress = cpuDetailState.cpuTotalUsed),
+                )
+            }
+            Text(
+                text = String.format(
+                    "%s: %s",
+                    stringResource(R.string.text_cpu_composition),
+                    cpuDetailState.composition
+                ),
+                style = MaterialTheme.typography.labelMedium,
+            )
+            Text(
+                text = String.format(
+                    "%s: %.2f%s",
+                    stringResource(R.string.text_load),
+                    cpuDetailState.cpuTotalUsed * 100f,
+                    "%"
+                ),
+                color = MaterialTheme.colorScheme.outline,
+                fontSize = 10.sp,
+                lineHeight = 10.sp
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+        Text(
+            text = String.format("%.1f℃", cpuDetailState.cpuTemperature),
+            color = MaterialTheme.colorScheme.outline,
+            fontSize = 8.sp,
+            lineHeight = 8.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.align(Alignment.TopEnd)
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun CpuLoadBar(viewModel: OverviewViewModel) {
+
+    val cpuDetailState by viewModel.cpuDetailState.collectAsStateWithLifecycle()
+    val columns by remember { derivedStateOf { cpuDetailState.cores.size / 2  } }
+
+    FlowRow(
+        modifier = Modifier.fillMaxWidth()
+            .padding(top = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        maxItemsInEachRow = columns,
+    ) {
+        cpuDetailState.cores.onEach {
+            CoreItem(it)
+        }
+    }
+}
+
+@SuppressLint("DefaultLocale")
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun FlowRowScope.CoreItem(coreDetail: OverviewViewModel.CoreDetail) {
+    Column(
+        modifier = Modifier.weight(1f)
+            .height(65.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .weight(1f)
+        ) {
+            Text(
+                text = String.format("%.0f%s", coreDetail.used * 100f, "%"),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.align(Alignment.Center)
+            )
+            LintStackChart(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .alpha(.4f),
+                state = ChartState(progress = coreDetail.used),
+            )
+        }
+        Text(
+            text = String.format(
+                "%.0fMHz",
+                coreDetail.currentFreq.toLong() / 1000f
+            ),
+            style = MaterialTheme.typography.labelSmall,
+        )
+        Text(
+            text = String.format(
+                "%.0f~%.0fMHz",
+                coreDetail.minFreq.toLong() / 1000f,
+                coreDetail.maxFreq.toLong() / 1000f,
+            ),
+            color = MaterialTheme.colorScheme.outline,
+            fontSize = 8.sp,
+            lineHeight = 8.sp
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+    }
 }
 
 @Composable

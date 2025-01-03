@@ -20,7 +20,7 @@ import java.io.BufferedWriter
  * @param user 用户身份，可以是是、su、suu
  */
 class ReusableShell(
-    val user: String,
+    private val user: String,
 ) {
     companion object {
         private const val CHECK_ROOT_STATE =
@@ -148,7 +148,13 @@ class ReusableShell(
                     }
                 }
             }
-            shellOutputCache.toString()
+            shellOutputCache.let {
+                var result = it.toString()
+                if (result.isNotEmpty()) {
+                    result = result.substring(0, result.length - 1)
+                }
+                result
+            }
         } catch (e: Exception) {
             Log.e("commitCmdSync-Lock", e.toString())
             "error"

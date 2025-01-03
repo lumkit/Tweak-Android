@@ -5,10 +5,14 @@ import android.content.Context
 import androidx.annotation.FloatRange
 import androidx.compose.runtime.Immutable
 import io.github.lumkit.tweak.common.BaseViewModel
+import io.github.lumkit.tweak.common.shell.CpuFrequencyUtils
 import io.github.lumkit.tweak.common.shell.CpuLoad
+import io.github.lumkit.tweak.common.shell.CpuTemperatureUtils
 import io.github.lumkit.tweak.common.shell.ExternalStorageUtils
 import io.github.lumkit.tweak.common.shell.GpuUtils
 import io.github.lumkit.tweak.common.shell.MemoryUtils
+import io.github.lumkit.tweak.common.util.CpuCodenameUtils
+import io.github.lumkit.tweak.data.AndroidSoc
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,11 +46,31 @@ class OverviewViewModel(
         val describe: String = "N/A",
     )
 
+    @Immutable
+    data class CpuDetail(
+        val cpuTemperature: Float = 25f,
+        val cpuTotalUsed: Float = 0f,
+        val cpuName: String = "N/A",
+        val composition: String = "N/A",
+        val cores: List<CoreDetail> = emptyList(),
+    )
+
+    @Immutable
+    data class CoreDetail(
+        val minFreq: String = "N/A",
+        val maxFreq: String = "N/A",
+        val currentFreq: String = "N/A",
+        val used: Float = 0f,
+    )
+
     private val _memoryBeanState = MutableStateFlow(MemoryBean())
     val memoryBeanState = _memoryBeanState.asStateFlow()
 
     private val _gpuBeanState = MutableStateFlow(GpuBean())
     val gpuBeanState = _gpuBeanState.asStateFlow()
+
+    private val _cpuDetailState = MutableStateFlow(CpuDetail())
+    val cpuDetailState = _cpuDetailState.asStateFlow()
 
     suspend fun loadMemoryBeanState(): Unit = withContext(Dispatchers.IO) {
         val storageInfo = ExternalStorageUtils.getExternalStorageInfo(context)
@@ -71,11 +95,47 @@ class OverviewViewModel(
         }
     }
 
-    suspend fun loadGpuBeanState() = withContext(Dispatchers.IO) {
+    suspend fun loadGpuBeanState(): Unit = withContext(Dispatchers.IO) {
         _gpuBeanState.value = GpuBean(
             used = GpuUtils.getGpuLoad().toFloat() / 100f,
             currentFreq = GpuUtils.getGpuFreq(),
             describe = GpuUtils.gles()
+        )
+    }
+
+    suspend fun loadCpuDetailState(): Unit = withContext(Dispatchers.IO) {
+        val coreDetails = mutableListOf<CoreDetail>()
+
+        val coreCount = CpuFrequencyUtils.getCoreCount()
+        val cpuLoad = CpuLoad.getCpuLoad()
+        val totalUsed = CpuLoad.getCpuLoadSum() / 100f
+
+        for (i in 0 until coreCount) {
+            val cpuId = "cpu$i"
+            val minFreq = CpuFrequencyUtils.getCurrentMinFrequency(cpuId)
+
+            val coreDetail = CoreDetail(
+                minFreq = minFreq,
+                maxFreq = CpuFrequencyUtils.getCurrentMaxFrequency(cpuId),
+                currentFreq = CpuFrequencyUtils.getCurrentFrequency(cpuId),
+                used = (cpuLoad[i] ?: 0f) / 100f
+            )
+            coreDetails.add(coreDetail)
+        }
+
+        val composition = buildString {
+            CpuFrequencyUtils.getClusterInfo().onEachIndexed { index, items ->
+                if (index > 0) append("+")
+                append("${items.size}")
+            }
+        }
+
+        _cpuDetailState.value = CpuDetail(
+            cpuTemperature = CpuTemperatureUtils.getCpuTemperature() ?: 25f,
+            cpuTotalUsed = totalUsed,
+            cpuName = AndroidSoc.getSocByCpuMode(CpuCodenameUtils.getCpuCodename())?.NAME ?: "CPU",
+            composition = composition,
+            cores = coreDetails,
         )
     }
 }

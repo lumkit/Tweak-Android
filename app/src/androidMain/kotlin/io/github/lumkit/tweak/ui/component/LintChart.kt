@@ -1,6 +1,7 @@
 package io.github.lumkit.tweak.ui.component
 
 import android.annotation.SuppressLint
+import androidx.annotation.FloatRange
 import androidx.compose.foundation.Canvas
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
@@ -16,7 +17,7 @@ import java.util.concurrent.LinkedBlockingQueue
 
 @Stable
 class ChartState(
-    val progress: Float,
+    @FloatRange(from = 0.0, to = 1.0) val progress: Float,
     val uuid: String = UUID.randomUUID().toString(),
 ) {
     override fun equals(other: Any?): Boolean {
@@ -59,7 +60,7 @@ fun LintStackChart(
                 newMap.add(0f)
             }
         }
-        newMap.put((state.progress).bounds(0f, 100f))
+        newMap.put((state.progress * 100f).bounds(0f, 100f))
         if (newMap.size > chartCount) {
             for (i in chartCount until newMap.size) {
                 newMap.poll()
