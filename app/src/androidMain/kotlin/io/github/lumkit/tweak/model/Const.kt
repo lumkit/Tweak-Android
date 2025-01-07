@@ -11,4 +11,5 @@ object Const {
     const val APP_DARK_MODE_STATE: String = "dark_mode_state"
     const val APP_SHARED_PREFERENCE_ID: String = "shared"
     const val APP_WORK_STATUS = "app_work_status"
+    const val APP_BATTERY_CURRENT_NOW_UNIT = "app_battery_current_now_unit"
 }

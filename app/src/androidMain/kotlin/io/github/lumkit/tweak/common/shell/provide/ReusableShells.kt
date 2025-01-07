@@ -8,7 +8,7 @@ object ReusableShells {
     private val shells = ConcurrentHashMap<String, ReusableShell>()
 
     @Synchronized
-    fun getInstance(key: String, user: String): ReusableShell {
+    fun getInstance(key: String, user: String = rootUser): ReusableShell {
         val shell = ReusableShell(user)
         if (!shells.containsKey(key)) {
             shells[key] = shell

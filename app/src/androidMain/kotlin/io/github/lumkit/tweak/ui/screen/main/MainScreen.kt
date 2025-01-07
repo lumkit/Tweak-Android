@@ -105,6 +105,7 @@ fun MainScreen() {
             modifier = Modifier
                 .padding(it)
                 .fillMaxSize(),
+            beyondViewportPageCount = navItems.size - 1
         ) { position ->
             when (position) {
                 0 -> FunctionPage()

@@ -83,12 +83,12 @@ fun CircleIndicator(
     val density = LocalDensity.current
 
     val targetIndicatorValue by animateFloatAsState(
-        targetValue = if (progress <= .005f) .005f else progress,
-        animationSpec = tween(durationMillis = 400)
+        targetValue = (if (progress <= .005f) .005f else progress).coerceIn(0f, 1f),
+        label = "CircleIndicator"
     )
 
     val indicatorColor by animateColorAsState(
-        targetValue = when (progress) {
+        targetValue = when (progress.coerceIn(0f, 1f)) {
             in .5f .. .80f -> midColor
             in .80f .. 1f -> highColor
             else -> foregroundColor.copy(alpha = .6f)
@@ -162,12 +162,12 @@ fun HorizontalIndicator(
 ) {
 
     val progressWidthAnimation by animateFloatAsState(
-        targetValue = if (progress <= .08f) .08f else progress,
-        animationSpec = tween(durationMillis = 400)
+        targetValue = (if (progress <= .08f) .08f else progress).coerceIn(0f, 1f),
+        label = "HorizontalIndicator"
     )
 
     val indicatorColor by animateColorAsState(
-        targetValue = when (progress) {
+        targetValue = when (progress.coerceIn(0f, 1f)) {
             in .5f .. .80f -> midColor
             in .80f .. 1f -> highColor
             else -> color.copy(alpha = .6f)

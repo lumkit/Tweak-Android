@@ -15,20 +15,23 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -38,10 +41,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,8 +54,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.lumkit.tweak.R
 import io.github.lumkit.tweak.common.util.autoUnit
+import io.github.lumkit.tweak.model.Config
 import io.github.lumkit.tweak.model.Const
-import io.github.lumkit.tweak.ui.component.ChartState
 import io.github.lumkit.tweak.ui.component.CircleIndicator
 import io.github.lumkit.tweak.ui.component.HorizontalIndicator
 import io.github.lumkit.tweak.ui.component.LintStackChart
@@ -60,6 +65,14 @@ import io.github.lumkit.tweak.ui.local.LocalStorageStore
 import io.github.lumkit.tweak.ui.local.StorageStore
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import org.jetbrains.compose.resources.painterResource
+import tweak_android.app.generated.resources.Res
+import tweak_android.app.generated.resources.ic_battery2
+import tweak_android.app.generated.resources.ic_capacity
+import tweak_android.app.generated.resources.ic_temperature
+import tweak_android.app.generated.resources.icon_android
+import tweak_android.app.generated.resources.icon_global
+import tweak_android.app.generated.resources.mode_fast
 
 @Composable
 fun OverviewPage(
@@ -71,8 +84,8 @@ fun OverviewPage(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp)
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Spacer(modifier = Modifier.height(4.dp))
@@ -94,7 +107,12 @@ private fun MemoryCard(viewModel: OverviewViewModel, storageStore: StorageStore)
     LaunchedEffect(Unit) {
         while (isActive) {
             viewModel.loadMemoryBeanState()
-            delay(storageStore.getInt(Const.APP_OVERVIEW_TICK, default = 2000).toLong())
+            delay(
+                storageStore.getInt(
+                    Const.APP_OVERVIEW_TICK,
+                    default = Config.DEFAULT_REFRESH_TICK
+                ).toLong()
+            )
         }
     }
 
@@ -312,7 +330,12 @@ private fun GpuCard(viewModel: OverviewViewModel, storageStore: StorageStore) {
     LaunchedEffect(Unit) {
         while (isActive) {
             viewModel.loadGpuBeanState()
-            delay(storageStore.getInt(Const.APP_OVERVIEW_TICK, default = 2000).toLong())
+            delay(
+                storageStore.getInt(
+                    Const.APP_OVERVIEW_TICK,
+                    default = Config.DEFAULT_REFRESH_TICK
+                ).toLong()
+            )
         }
     }
 
@@ -383,7 +406,9 @@ private fun SocCard(viewModel: OverviewViewModel, storageStore: StorageStore) {
     LaunchedEffect(Unit) {
         while (isActive) {
             viewModel.loadCpuDetailState()
-            delay(storageStore.getInt(Const.APP_OVERVIEW_TICK, 2000).toLong())
+            delay(
+                storageStore.getInt(Const.APP_OVERVIEW_TICK, Config.DEFAULT_REFRESH_TICK).toLong()
+            )
         }
     }
 
@@ -399,7 +424,7 @@ private fun SocCard(viewModel: OverviewViewModel, storageStore: StorageStore) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(90.dp),
+                    .height(100.dp),
             ) {
                 ServicesBar(viewModel)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -453,7 +478,7 @@ private fun RowScope.CpuTotalBar(viewModel: OverviewViewModel) {
                     modifier = Modifier
                         .fillMaxSize()
                         .alpha(.4f),
-                    state = ChartState(progress = cpuDetailState.cpuTotalUsed),
+                    state = cpuDetailState.cpuTotalUsed,
                 )
             }
             Text(
@@ -468,7 +493,7 @@ private fun RowScope.CpuTotalBar(viewModel: OverviewViewModel) {
                 text = String.format(
                     "%s: %.2f%s",
                     stringResource(R.string.text_load),
-                    cpuDetailState.cpuTotalUsed * 100f,
+                    cpuDetailState.cpuTotalUsed.progress * 100f,
                     "%"
                 ),
                 color = MaterialTheme.colorScheme.outline,
@@ -493,10 +518,11 @@ private fun RowScope.CpuTotalBar(viewModel: OverviewViewModel) {
 private fun CpuLoadBar(viewModel: OverviewViewModel) {
 
     val cpuDetailState by viewModel.cpuDetailState.collectAsStateWithLifecycle()
-    val columns by remember { derivedStateOf { cpuDetailState.cores.size / 2  } }
+    val columns by remember { derivedStateOf { cpuDetailState.cores.size / 2 } }
 
     FlowRow(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
             .padding(top = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -513,7 +539,8 @@ private fun CpuLoadBar(viewModel: OverviewViewModel) {
 @Composable
 private fun FlowRowScope.CoreItem(coreDetail: OverviewViewModel.CoreDetail) {
     Column(
-        modifier = Modifier.weight(1f)
+        modifier = Modifier
+            .weight(1f)
             .height(65.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -523,7 +550,7 @@ private fun FlowRowScope.CoreItem(coreDetail: OverviewViewModel.CoreDetail) {
                 .weight(1f)
         ) {
             Text(
-                text = String.format("%.0f%s", coreDetail.used * 100f, "%"),
+                text = String.format("%.0f%s", coreDetail.used.progress * 100f, "%"),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.outline,
                 modifier = Modifier.align(Alignment.Center)
@@ -532,7 +559,7 @@ private fun FlowRowScope.CoreItem(coreDetail: OverviewViewModel.CoreDetail) {
                 modifier = Modifier
                     .fillMaxSize()
                     .alpha(.4f),
-                state = ChartState(progress = coreDetail.used),
+                state = coreDetail.used,
             )
         }
         Text(
@@ -556,7 +583,190 @@ private fun FlowRowScope.CoreItem(coreDetail: OverviewViewModel.CoreDetail) {
     }
 }
 
+@SuppressLint("DefaultLocale")
 @Composable
 private fun OtherCard(viewModel: OverviewViewModel, storageStore: StorageStore) {
 
+    val otherDetailState by viewModel.otherDetailState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        while (isActive) {
+            viewModel.loadOtherDetailState()
+            delay(
+                storageStore.getInt(Const.APP_OVERVIEW_TICK, Config.DEFAULT_REFRESH_TICK).toLong()
+            )
+        }
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        OutlinedCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            colors = CardDefaults.outlinedCardColors()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OtherRow(
+                    icon = {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_battery2),
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    },
+                    text = {
+                        Text(
+                            text = String.format("%.0fmA", otherDetailState.electricCurrent),
+                            overflow = TextOverflow.Ellipsis,
+                            softWrap = false
+                        )
+                    }
+                )
+                OtherRow(
+                    icon = {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_capacity),
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    },
+                    text = {
+                        Text(
+                            text = String.format(
+                                "%d%s  %.2fv",
+                                otherDetailState.batteryLevel,
+                                "%",
+                                otherDetailState.voltage
+                            ),
+                            overflow = TextOverflow.Ellipsis,
+                            softWrap = false
+                        )
+                    }
+                )
+                OtherRow(
+                    icon = {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_temperature),
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    },
+                    text = {
+                        Text(
+                            text = String.format("%.1f℃", otherDetailState.temperature),
+                            overflow = TextOverflow.Ellipsis,
+                            softWrap = false
+                        )
+                    }
+                )
+            }
+        }
+
+        OutlinedCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            colors = CardDefaults.outlinedCardColors()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OtherRow(
+                    icon = {
+                        Icon(
+                            painter = painterResource(Res.drawable.icon_android),
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    },
+                    text = {
+                        Text(
+                            text = String.format(
+                                "Android %s(%d)",
+                                otherDetailState.androidVersion,
+                                otherDetailState.androidSDK
+                            ),
+                            overflow = TextOverflow.Ellipsis,
+                            softWrap = false
+                        )
+                    }
+                )
+                OtherRow(
+                    icon = {
+                        Icon(
+                            painter = painterResource(Res.drawable.mode_fast),
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    },
+                    text = {
+                        Text(
+                            text = String.format(
+                                "%s %s",
+                                stringResource(R.string.text_running_duration),
+                                otherDetailState.runningDuration,
+                            ),
+                            overflow = TextOverflow.Ellipsis,
+                            softWrap = false
+                        )
+                    }
+                )
+                OtherRow(
+                    icon = {
+                        Icon(
+                            painter = painterResource(Res.drawable.icon_global),
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    },
+                    text = {
+                        Text(
+                            text = buildAnnotatedString {
+                                withLink(
+                                    link = LinkAnnotation.Url("https://tweak.lumtoolkit.com")
+                                ) {
+                                    append(stringResource(R.string.text_goto_websit))
+                                }
+                            },
+                            overflow = TextOverflow.Ellipsis,
+                            softWrap = false
+                        )
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun OtherRow(
+    modifier: Modifier = Modifier,
+    icon: @Composable () -> Unit,
+    text: @Composable () -> Unit,
+) {
+    CompositionLocalProvider(
+        LocalContentColor provides MaterialTheme.colorScheme.outline
+    ) {
+        Row(
+            modifier = modifier,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            icon()
+            ProvideTextStyle(MaterialTheme.typography.labelSmall) {
+                text()
+            }
+        }
+    }
 }

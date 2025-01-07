@@ -2,17 +2,26 @@ package io.github.lumkit.tweak.ui.screen.main.page
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.os.BatteryManager
+import android.os.Build
+import android.os.SystemClock
 import androidx.annotation.FloatRange
 import androidx.compose.runtime.Immutable
 import io.github.lumkit.tweak.common.BaseViewModel
+import io.github.lumkit.tweak.common.shell.BatteryUtils
 import io.github.lumkit.tweak.common.shell.CpuFrequencyUtils
 import io.github.lumkit.tweak.common.shell.CpuLoad
 import io.github.lumkit.tweak.common.shell.CpuTemperatureUtils
 import io.github.lumkit.tweak.common.shell.ExternalStorageUtils
 import io.github.lumkit.tweak.common.shell.GpuUtils
 import io.github.lumkit.tweak.common.shell.MemoryUtils
+import io.github.lumkit.tweak.common.shell.provide.ReusableShells
 import io.github.lumkit.tweak.common.util.CpuCodenameUtils
+import io.github.lumkit.tweak.common.util.firstLine
+import io.github.lumkit.tweak.common.util.formatUptime
 import io.github.lumkit.tweak.data.AndroidSoc
+import io.github.lumkit.tweak.data.ChartState
+import io.github.lumkit.tweak.model.Config
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -49,7 +58,7 @@ class OverviewViewModel(
     @Immutable
     data class CpuDetail(
         val cpuTemperature: Float = 25f,
-        val cpuTotalUsed: Float = 0f,
+        val cpuTotalUsed: ChartState = ChartState(0f),
         val cpuName: String = "N/A",
         val composition: String = "N/A",
         val cores: List<CoreDetail> = emptyList(),
@@ -60,7 +69,18 @@ class OverviewViewModel(
         val minFreq: String = "N/A",
         val maxFreq: String = "N/A",
         val currentFreq: String = "N/A",
-        val used: Float = 0f,
+        val used: ChartState = ChartState(0f),
+    )
+
+    @Immutable
+    data class OtherDetail(
+        val batteryLevel: Int = 0,
+        val electricCurrent: Float = 0f,
+        val voltage: Float = 0f,
+        val temperature: Float = 0f,
+        val androidVersion: String = "N/A",
+        val androidSDK: Int = 0,
+        val runningDuration: String = "N/A",
     )
 
     private val _memoryBeanState = MutableStateFlow(MemoryBean())
@@ -71,6 +91,9 @@ class OverviewViewModel(
 
     private val _cpuDetailState = MutableStateFlow(CpuDetail())
     val cpuDetailState = _cpuDetailState.asStateFlow()
+
+    private val _otherDetailState = MutableStateFlow(OtherDetail())
+    val otherDetailState = _otherDetailState.asStateFlow()
 
     suspend fun loadMemoryBeanState(): Unit = withContext(Dispatchers.IO) {
         val storageInfo = ExternalStorageUtils.getExternalStorageInfo(context)
@@ -118,7 +141,9 @@ class OverviewViewModel(
                 minFreq = minFreq,
                 maxFreq = CpuFrequencyUtils.getCurrentMaxFrequency(cpuId),
                 currentFreq = CpuFrequencyUtils.getCurrentFrequency(cpuId),
-                used = (cpuLoad[i] ?: 0f) / 100f
+                used = ChartState(
+                    progress = (cpuLoad[i] ?: 0f) / 100f
+                )
             )
             coreDetails.add(coreDetail)
         }
@@ -132,10 +157,39 @@ class OverviewViewModel(
 
         _cpuDetailState.value = CpuDetail(
             cpuTemperature = CpuTemperatureUtils.getCpuTemperature() ?: 25f,
-            cpuTotalUsed = totalUsed,
+            cpuTotalUsed = ChartState(
+                progress = totalUsed
+            ),
             cpuName = AndroidSoc.getSocByCpuMode(CpuCodenameUtils.getCpuCodename())?.NAME ?: "CPU",
             composition = composition,
             cores = coreDetails,
+        )
+    }
+
+    private val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+
+    suspend fun loadOtherDetailState(): Unit = withContext(Dispatchers.IO) {
+
+        val batteryStatus = BatteryUtils.getBatteryStatus()
+        val batteryCurrentNow = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
+        val voltage = try {
+            ReusableShells.execSync("cat /sys/class/power_supply/battery/voltage_now").firstLine().toFloat()
+        }catch (e: Exception) {
+            Float.NaN
+        }
+
+        _otherDetailState.value = OtherDetail(
+            batteryLevel = batteryStatus.level,
+            electricCurrent = if (batteryCurrentNow in Long.MIN_VALUE until Long.MAX_VALUE) {
+                batteryCurrentNow.toFloat() / Config.BatteryElectricCurrent.toFloat()
+            } else {
+                Float.NaN
+            },
+            voltage = voltage / 1_000_000.0f,
+            temperature = batteryStatus.temperature,
+            androidVersion = Build.VERSION.RELEASE,
+            androidSDK = Build.VERSION.SDK_INT,
+            runningDuration = SystemClock.elapsedRealtime().formatUptime(),
         )
     }
 }

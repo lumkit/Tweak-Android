@@ -84,6 +84,15 @@ fun RuntimeModeScreen(
             backgroundColor = MaterialTheme.colorScheme.surface
         )
     ) {
+
+        LaunchedEffect(viewModel) {
+            if (storageStore.getBoolean(Const.APP_ACCEPT_RISK)) {
+                viewModel.initRootModeConfig {
+                    Toast.makeText(activity, it.makeText(), Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
         Scaffold(
             modifier = Modifier.fillMaxSize(),
         ) {
@@ -314,89 +323,93 @@ private fun CheckPermissionsDialog(
                 Column(
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    AnimatedContent(
-                        targetState = permissionState
-                    ) {
-                        when (it) {
-                            RuntimeModeViewModel.PermissionState.Request -> {
-                                Column(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(55.dp),
-                                        strokeWidth = 4.dp
-                                    )
-                                    Text(text = initConfigDialogMessage)
+                    when (permissionState) {
+                        RuntimeModeViewModel.PermissionState.Request -> {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(55.dp),
+                                    strokeWidth = 4.dp
+                                )
+                                Text(text = initConfigDialogMessage)
+                            }
+                        }
+                        RuntimeModeViewModel.PermissionState.Success -> {
+                            LaunchedEffect(Unit) {
+                                viewModel.setInitConfigDialogState(false)
+                                navHostController.navigate(ScreenRoute.MAIN) {
+                                    popUpTo(ScreenRoute.RUNTIME_MODE) {
+                                        inclusive = true
+                                    }
                                 }
                             }
-                            RuntimeModeViewModel.PermissionState.Success -> {
-                                Text(text = stringResource(R.string.text_init_app_success))
-                            }
-                            RuntimeModeViewModel.PermissionState.RetryCheckRoot -> {
-                                Column {
-                                    var userId by remember { mutableStateOf("su") }
+                            Text(text = stringResource(R.string.text_init_app_success))
+                        }
+                        RuntimeModeViewModel.PermissionState.RetryCheckRoot -> {
+                            Column {
+                                var userId by remember { mutableStateOf("su") }
 
-                                    LaunchedEffect(Unit) {
-                                        userId = storageStore.getString(Const.APP_SHELL_ROOT_USER) ?: "su"
-                                    }
+                                LaunchedEffect(Unit) {
+                                    userId = storageStore.getString(Const.APP_SHELL_ROOT_USER) ?: "su"
+                                }
 
-                                    Text(text = initConfigDialogMessage)
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically
+                                Text(text = initConfigDialogMessage)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(
+                                        modifier = Modifier.weight(1f)
                                     ) {
-                                        Column(
-                                            modifier = Modifier.weight(1f)
-                                        ) {
-                                            Text(
-                                                text = stringResource(R.string.text_change_root_user),
-                                                style = MaterialTheme.typography.bodyMedium
-                                            )
-                                            Text(
-                                                text = String.format("%s: %s", stringResource(R.string.text_change_root_user_tip), userId),
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.outline
-                                            )
-                                        }
-                                        Column {
-                                            var expanded by remember { mutableStateOf(false) }
+                                        Text(
+                                            text = stringResource(R.string.text_change_root_user),
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                        Text(
+                                            text = String.format("%s: %s", stringResource(R.string.text_change_root_user_tip), userId),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.outline
+                                        )
+                                    }
+                                    Column {
+                                        var expanded by remember { mutableStateOf(false) }
 
-                                            TextButton(
-                                                onClick = {
-                                                    expanded = true
-                                                }
-                                            ) {
-                                                Text(text = stringResource(R.string.text_change_user))
+                                        TextButton(
+                                            onClick = {
+                                                expanded = true
                                             }
+                                        ) {
+                                            Text(text = stringResource(R.string.text_change_user))
+                                        }
 
-                                            DropdownMenu(
-                                                expanded = expanded,
-                                                onDismissRequest = { expanded = false }
-                                            ) {
-                                                Config.ROOT_USERS.forEach { id ->
-                                                    DropdownMenuItem(
-                                                        leadingIcon = {
-                                                            Checkbox(
-                                                                checked = id == userId,
-                                                                onCheckedChange = null
-                                                            )
-                                                        },
-                                                        text = {
-                                                            Text(text = id)
-                                                        },
-                                                        onClick = {
-                                                            ioScope.launch {
-                                                                userId = id
-                                                                // 切换所有用户
-                                                                ReusableShells.changeUserIdAtAll(id)
-                                                                expanded = false
-                                                            }
-                                                        },
-                                                    )
-                                                }
+                                        DropdownMenu(
+                                            expanded = expanded,
+                                            onDismissRequest = { expanded = false }
+                                        ) {
+                                            Config.ROOT_USERS.forEach { id ->
+                                                DropdownMenuItem(
+                                                    leadingIcon = {
+                                                        Checkbox(
+                                                            checked = id == userId,
+                                                            onCheckedChange = null
+                                                        )
+                                                    },
+                                                    text = {
+                                                        Text(text = id)
+                                                    },
+                                                    onClick = {
+                                                        ioScope.launch {
+                                                            userId = id
+                                                            // 切换所有用户
+                                                            ReusableShells.changeUserIdAtAll(id)
+                                                            expanded = false
+                                                        }
+                                                    },
+                                                )
                                             }
                                         }
                                     }
@@ -413,22 +426,7 @@ private fun CheckPermissionsDialog(
                    ) {
                        when (it) {
                            RuntimeModeViewModel.PermissionState.Request -> Unit
-                           RuntimeModeViewModel.PermissionState.Success -> {
-                               Button(
-                                   onClick = {
-                                       viewModel.setInitConfigDialogState(false)
-                                       navHostController.navigate(ScreenRoute.MAIN) {
-                                           popUpTo(ScreenRoute.RUNTIME_MODE) {
-                                               inclusive = true
-                                           }
-                                       }
-                                   }
-                               ) {
-                                   Text(
-                                       text = stringResource(R.string.text_confirm)
-                                   )
-                               }
-                           }
+                           RuntimeModeViewModel.PermissionState.Success -> Unit
                            RuntimeModeViewModel.PermissionState.RetryCheckRoot -> {
                                Button(
                                    onClick = {

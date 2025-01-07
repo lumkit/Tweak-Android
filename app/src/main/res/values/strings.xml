@@ -11,7 +11,7 @@
     <string name="text_cancel">取消</string>
     <string name="text_accept_and_continue">同意继续</string>
     <string name="text_init_app">应用初始化</string>
-    <string name="text_init_app_success">初始化完毕！点击确认进入Tweak！</string>
+    <string name="text_init_app_success">初始化完毕！</string>
     <string name="text_confirm">确认</string>
     <string name="text_retry">重试</string>
     <string name="text_exit_app">退出软件</string>
@@ -30,4 +30,6 @@
     <string name="text_change_root_user_tip">当前</string>
     <string name="text_change_user">切换命令</string>
     <string name="text_cpu_composition">簇集</string>
+    <string name="text_running_duration">已开机</string>
+    <string name="text_goto_websit">访问Tweak官网</string>
 </resources>

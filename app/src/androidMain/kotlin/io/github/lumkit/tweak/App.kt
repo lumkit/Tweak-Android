@@ -46,11 +46,7 @@ private fun Routing() {
 
     NavHost(
         navController = navHostController,
-        startDestination = if (storageStore.getBoolean(Const.APP_SHARED_RUNTIME_MODE_STATE)) {
-            ScreenRoute.MAIN
-        } else {
-            ScreenRoute.RUNTIME_MODE
-        },
+        startDestination = ScreenRoute.RUNTIME_MODE,
     ) {
         composable(route = ScreenRoute.PROTOCOL) {
             ProtocolScreen()
