@@ -15,6 +15,7 @@ import io.github.lumkit.tweak.ui.local.Material3
 import io.github.lumkit.tweak.ui.local.StorageStore
 import io.github.lumkit.tweak.ui.local.ThemeStore
 import io.github.lumkit.tweak.ui.local.json
+import io.github.lumkit.tweak.ui.local.toColor
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
@@ -55,6 +56,7 @@ internal fun Main(
             }
             customColorScheme.lightColorScheme = m3.schemes.light.toColorScheme()
             customColorScheme.darkColorScheme = m3.schemes.dark.toColorScheme()
+            customColorScheme.material3 = m3
         }catch (e: Exception) {
             e.printStackTrace()
         }

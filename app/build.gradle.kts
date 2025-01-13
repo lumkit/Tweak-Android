@@ -24,6 +24,8 @@ kotlin {
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
+
+            implementation(libs.kotlin.reflect)
         }
 
         androidMain.dependencies {
@@ -48,9 +50,8 @@ kotlin {
             implementation(libs.coil.network.ktor3)
             implementation(libs.coil.network.cache.control)
 
-            // 模糊库
-            implementation(libs.haze)
-            implementation(libs.haze.materials)
+            // 颜色选择器 https://github.com/mhssn95/compose-color-picker
+            implementation(libs.color.picker)
         }
     }
 }

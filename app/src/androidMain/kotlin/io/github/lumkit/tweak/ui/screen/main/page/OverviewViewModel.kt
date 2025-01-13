@@ -15,6 +15,7 @@ import io.github.lumkit.tweak.common.shell.CpuTemperatureUtils
 import io.github.lumkit.tweak.common.shell.ExternalStorageUtils
 import io.github.lumkit.tweak.common.shell.GpuUtils
 import io.github.lumkit.tweak.common.shell.MemoryUtils
+import io.github.lumkit.tweak.common.shell.ProcessUtils
 import io.github.lumkit.tweak.common.shell.provide.ReusableShells
 import io.github.lumkit.tweak.common.util.CpuCodenameUtils
 import io.github.lumkit.tweak.common.util.firstLine
@@ -22,6 +23,7 @@ import io.github.lumkit.tweak.common.util.formatUptime
 import io.github.lumkit.tweak.data.AndroidSoc
 import io.github.lumkit.tweak.data.ChartState
 import io.github.lumkit.tweak.model.Config
+import io.github.lumkit.tweak.model.ProcessInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -94,6 +96,9 @@ class OverviewViewModel(
 
     private val _otherDetailState = MutableStateFlow(OtherDetail())
     val otherDetailState = _otherDetailState.asStateFlow()
+
+    private val _runningServicesDetailState = MutableStateFlow(emptyList<ProcessInfo>())
+    val runningServicesDetailState = _runningServicesDetailState.asStateFlow()
 
     suspend fun loadMemoryBeanState(): Unit = withContext(Dispatchers.IO) {
         val storageInfo = ExternalStorageUtils.getExternalStorageInfo(context)
@@ -191,5 +196,13 @@ class OverviewViewModel(
             androidSDK = Build.VERSION.SDK_INT,
             runningDuration = SystemClock.elapsedRealtime().formatUptime(),
         )
+    }
+
+    private val processUtils = ProcessUtils()
+
+    suspend fun loadRunningServicesDetailState(): Unit = withContext(Dispatchers.IO) {
+        if (processUtils.supported(context)) {
+            _runningServicesDetailState.value = processUtils.getAllProcess().sortedBy { it.cpu }.reversed()
+        }
     }
 }

@@ -20,6 +20,7 @@ ktor = "3.0.3"
 coil3 = "3.0.4"
 haze = "1.1.1"
 accompanist-systemuicontroller = "0.36.0"
+color-picker = "1.0.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -48,6 +49,8 @@ coil-network-cache-control = { module = "io.coil-kt.coil3:coil-network-cache-con
 haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
 haze-materials = { module = "dev.chrisbanes.haze:haze-materials", version.ref = "haze" }
 accompanist-systemuicontroller = { module = "com.google.accompanist:accompanist-systemuicontroller", version.ref = "accompanist-systemuicontroller" }
+color-picker = { module = "io.mhssn:colorpicker", version.ref = "color-picker" }
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

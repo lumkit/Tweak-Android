@@ -2,6 +2,7 @@ package io.github.lumkit.tweak.model
 
 import io.github.lumkit.tweak.TweakApplication
 import java.io.File
+import androidx.core.content.edit
 
 object Config {
     object Path {
@@ -35,10 +36,21 @@ object Config {
      */
     const val DEFAULT_REFRESH_TICK = 1250
 
+    val REFRESH_TICK: Long
+        get() = TweakApplication.shared.getInt(Const.APP_OVERVIEW_TICK, DEFAULT_REFRESH_TICK)
+            .toLong()
+
     /**
      * 电流单位
      */
     var BatteryElectricCurrent: Long
         get() = TweakApplication.shared.getLong(Const.APP_BATTERY_CURRENT_NOW_UNIT, -1000)
-        set(value) { TweakApplication.shared.edit().putLong(Const.APP_BATTERY_CURRENT_NOW_UNIT, value).apply() }
+        set(value) {
+            TweakApplication.shared.edit {
+                putLong(
+                    Const.APP_BATTERY_CURRENT_NOW_UNIT,
+                    value
+                )
+            }
+        }
 }

@@ -1,10 +1,6 @@
 package io.github.lumkit.tweak.ui.local
 
 import androidx.compose.material3.ColorScheme
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -14,6 +10,8 @@ import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.data.DarkModeState
 import io.github.lumkit.tweak.ui.theme.darkScheme
 import io.github.lumkit.tweak.ui.theme.lightScheme
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import java.io.File
 
@@ -88,6 +86,7 @@ class CustomColorScheme {
     var isCustomColorScheme by mutableStateOf(false)
     var lightColorScheme by mutableStateOf(lightScheme)
     var darkColorScheme by mutableStateOf(darkScheme)
+    var material3 by mutableStateOf<Material3?>(null)
 }
 
 @Serializable

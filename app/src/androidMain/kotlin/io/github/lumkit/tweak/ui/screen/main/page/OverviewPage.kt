@@ -2,6 +2,11 @@ package io.github.lumkit.tweak.ui.screen.main.page
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.drawable.Drawable
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,9 +23,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -35,10 +43,15 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.LinkAnnotation
@@ -50,19 +63,21 @@ import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil3.asImage
+import coil3.compose.AsyncImage
 import io.github.lumkit.tweak.R
+import io.github.lumkit.tweak.common.util.AppInfoLoader
 import io.github.lumkit.tweak.common.util.autoUnit
 import io.github.lumkit.tweak.model.Config
-import io.github.lumkit.tweak.model.Const
+import io.github.lumkit.tweak.model.ProcessInfo
 import io.github.lumkit.tweak.ui.component.CircleIndicator
 import io.github.lumkit.tweak.ui.component.HorizontalIndicator
 import io.github.lumkit.tweak.ui.component.LintStackChart
 import io.github.lumkit.tweak.ui.component.PlainTooltipBox
 import io.github.lumkit.tweak.ui.component.RichTooltipBox
-import io.github.lumkit.tweak.ui.local.LocalStorageStore
-import io.github.lumkit.tweak.ui.local.StorageStore
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import org.jetbrains.compose.resources.painterResource
@@ -79,8 +94,6 @@ fun OverviewPage(
     context: Context = LocalContext.current,
     viewModel: OverviewViewModel = viewModel { OverviewViewModel(context) }
 ) {
-    val storageStore = LocalStorageStore.current
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -89,10 +102,10 @@ fun OverviewPage(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Spacer(modifier = Modifier.height(4.dp))
-        MemoryCard(viewModel, storageStore)
-        GpuCard(viewModel, storageStore)
-        SocCard(viewModel, storageStore)
-        OtherCard(viewModel, storageStore)
+        MemoryCard(viewModel)
+        GpuCard(viewModel)
+        SocCard(viewModel, context)
+        OtherCard(viewModel)
         Spacer(modifier = Modifier.height(16.dp))
     }
 }
@@ -100,19 +113,14 @@ fun OverviewPage(
 @SuppressLint("DefaultLocale")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MemoryCard(viewModel: OverviewViewModel, storageStore: StorageStore) {
+private fun MemoryCard(viewModel: OverviewViewModel) {
 
     val memoryState by viewModel.memoryBeanState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         while (isActive) {
             viewModel.loadMemoryBeanState()
-            delay(
-                storageStore.getInt(
-                    Const.APP_OVERVIEW_TICK,
-                    default = Config.DEFAULT_REFRESH_TICK
-                ).toLong()
-            )
+            delay(Config.REFRESH_TICK)
         }
     }
 
@@ -323,19 +331,14 @@ private fun SwapBar(memoryState: OverviewViewModel.MemoryBean) {
 @SuppressLint("DefaultLocale")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun GpuCard(viewModel: OverviewViewModel, storageStore: StorageStore) {
+private fun GpuCard(viewModel: OverviewViewModel) {
 
     val gpuBeanState by viewModel.gpuBeanState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         while (isActive) {
             viewModel.loadGpuBeanState()
-            delay(
-                storageStore.getInt(
-                    Const.APP_OVERVIEW_TICK,
-                    default = Config.DEFAULT_REFRESH_TICK
-                ).toLong()
-            )
+            delay(Config.REFRESH_TICK)
         }
     }
 
@@ -401,19 +404,18 @@ private fun GpuCard(viewModel: OverviewViewModel, storageStore: StorageStore) {
 }
 
 @Composable
-private fun SocCard(viewModel: OverviewViewModel, storageStore: StorageStore) {
+private fun SocCard(viewModel: OverviewViewModel, context: Context) {
 
     LaunchedEffect(Unit) {
         while (isActive) {
             viewModel.loadCpuDetailState()
-            delay(
-                storageStore.getInt(Const.APP_OVERVIEW_TICK, Config.DEFAULT_REFRESH_TICK).toLong()
-            )
+            delay(Config.REFRESH_TICK)
         }
     }
 
     OutlinedCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth()
+            .animateContentSize(),
         colors = CardDefaults.outlinedCardColors()
     ) {
         Column(
@@ -424,9 +426,9 @@ private fun SocCard(viewModel: OverviewViewModel, storageStore: StorageStore) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(100.dp),
+                    .height(120.dp),
             ) {
-                ServicesBar(viewModel)
+                ServicesBar(viewModel, context)
                 Spacer(modifier = Modifier.width(8.dp))
                 VerticalDivider(modifier = Modifier.padding(bottom = 12.dp))
                 Spacer(modifier = Modifier.width(8.dp))
@@ -439,13 +441,105 @@ private fun SocCard(viewModel: OverviewViewModel, storageStore: StorageStore) {
 }
 
 @Composable
-private fun RowScope.ServicesBar(viewModel: OverviewViewModel) {
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .weight(1f)
-    ) {
+private fun RowScope.ServicesBar(viewModel: OverviewViewModel, context: Context) {
 
+    val runningServicesDetailState by viewModel.runningServicesDetailState.collectAsStateWithLifecycle()
+    val appInfoLoader = remember { AppInfoLoader(context, 100) }
+
+    LaunchedEffect(Unit) {
+        while (isActive){
+            viewModel.loadRunningServicesDetailState()
+            delay(Config.REFRESH_TICK)
+        }
+    }
+
+    AnimatedContent(
+        modifier = Modifier.weight(1f),
+        targetState = runningServicesDetailState.isNotEmpty()
+    ) {
+        if (it) {
+            Row {
+                LazyColumn(
+                    modifier = Modifier
+                        .padding(bottom = 12.dp)
+                        .weight(1f)
+                        .fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    items(runningServicesDetailState) { processInfo ->
+                        ServiceItem(processInfo, appInfoLoader)
+                    }
+                }
+            }
+        } else {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                     modifier = Modifier.size(32.dp)
+                )
+            }
+        }
+    }
+}
+
+@SuppressLint("DefaultLocale")
+@Composable
+private fun ServiceItem(processInfo: ProcessInfo, appInfoLoader: AppInfoLoader) {
+
+    var icon by remember { mutableStateOf<ImageBitmap?>(null) }
+
+    LaunchedEffect(processInfo.name) {
+        icon = appInfoLoader.loadIcon(processInfo.name).await()?.toBitmap()?.asImageBitmap()
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(4.dp))
+            .clickable {
+
+            },
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            if (icon == null) {
+                Image(
+                    painter = androidx.compose.ui.res.painterResource(R.drawable.ic_linux),
+                    contentDescription = null,
+                    modifier = Modifier.size(12.dp)
+                )
+            } else {
+                icon?.let {
+                    Image(
+                        bitmap = it,
+                        contentDescription = null,
+                        modifier = Modifier.size(12.dp)
+                    )
+                }
+            }
+            Text(
+                text = processInfo.name,
+                overflow = TextOverflow.Ellipsis,
+                fontSize = 8.sp,
+                lineHeight = 8.sp,
+                softWrap = false,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = String.format("%.2f%s", processInfo.cpu, "%"),
+                style = MaterialTheme.typography.labelSmall,
+                fontSize = 8.sp,
+                lineHeight = 8.sp,
+                color = MaterialTheme.colorScheme.outline
+            )
+        }
     }
 }
 
@@ -520,16 +614,32 @@ private fun CpuLoadBar(viewModel: OverviewViewModel) {
     val cpuDetailState by viewModel.cpuDetailState.collectAsStateWithLifecycle()
     val columns by remember { derivedStateOf { cpuDetailState.cores.size / 2 } }
 
-    FlowRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        maxItemsInEachRow = columns,
+    AnimatedContent(
+        targetState = cpuDetailState.cores.isNotEmpty()
     ) {
-        cpuDetailState.cores.onEach {
-            CoreItem(it)
+        if (it) {
+            FlowRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                maxItemsInEachRow = columns,
+            ) {
+                cpuDetailState.cores.onEach { core ->
+                    CoreItem(core)
+                }
+            }
+        } else {
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.padding(32.dp)
+                        .size(32.dp)
+                )
+            }
         }
     }
 }
@@ -565,15 +675,15 @@ private fun FlowRowScope.CoreItem(coreDetail: OverviewViewModel.CoreDetail) {
         Text(
             text = String.format(
                 "%.0fMHz",
-                coreDetail.currentFreq.toLong() / 1000f
+                (coreDetail.currentFreq.toLongOrNull() ?: 0L) / 1000f
             ),
             style = MaterialTheme.typography.labelSmall,
         )
         Text(
             text = String.format(
                 "%.0f~%.0fMHz",
-                coreDetail.minFreq.toLong() / 1000f,
-                coreDetail.maxFreq.toLong() / 1000f,
+                (coreDetail.minFreq.toLongOrNull() ?: 0L) / 1000f,
+                (coreDetail.maxFreq.toLongOrNull() ?: 0L) / 1000f,
             ),
             color = MaterialTheme.colorScheme.outline,
             fontSize = 8.sp,
@@ -585,16 +695,14 @@ private fun FlowRowScope.CoreItem(coreDetail: OverviewViewModel.CoreDetail) {
 
 @SuppressLint("DefaultLocale")
 @Composable
-private fun OtherCard(viewModel: OverviewViewModel, storageStore: StorageStore) {
+private fun OtherCard(viewModel: OverviewViewModel) {
 
     val otherDetailState by viewModel.otherDetailState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         while (isActive) {
             viewModel.loadOtherDetailState()
-            delay(
-                storageStore.getInt(Const.APP_OVERVIEW_TICK, Config.DEFAULT_REFRESH_TICK).toLong()
-            )
+            delay(Config.REFRESH_TICK)
         }
     }
 

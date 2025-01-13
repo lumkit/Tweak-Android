@@ -20,7 +20,7 @@ import java.io.BufferedWriter
  * @param user 用户身份，可以是是、su、suu
  */
 class ReusableShell(
-    private val user: String,
+    val user: String,
 ) {
     companion object {
         private const val CHECK_ROOT_STATE =
@@ -122,45 +122,45 @@ class ReusableShell(
         }
         startProcess()
         try {
-            mutex.lock()
-            currentIsIdle = false
+            mutex.withLock {
+                currentIsIdle = false
 
-            writer?.apply {
-                withContext(Dispatchers.IO) {
-                    write(ECHO_START)
-                    write(cmd)
-                    write(ECHO_END)
-                    flush()
-                }
-            }
-
-            val shellOutputCache = StringBuilder()
-            var line: String?
-            while (reader?.readLine().also { line = it } != null) {
-                if (line?.contains(START_TAG) == true) {
-                    shellOutputCache.clear()
-                } else if (line?.contains(END_TAG) == true) {
-                    shellOutputCache.append(line?.substring(0, line?.indexOf(END_TAG) ?: 0))
-                    break
-                } else {
-                    if (line?.contains(START_TAG) == false && line?.contains(END_TAG) == false) {
-                        shellOutputCache.append(line).append("\n")
+                writer?.apply {
+                    withContext(Dispatchers.IO) {
+                        write(ECHO_START)
+                        write(cmd)
+                        write(ECHO_END)
+                        flush()
                     }
                 }
-            }
-            shellOutputCache.let {
-                var result = it.toString()
-                if (result.isNotEmpty()) {
-                    result = result.substring(0, result.length - 1)
+
+                val shellOutputCache = StringBuilder()
+                var line: String?
+                while (reader?.readLine().also { line = it } != null) {
+                    if (line?.contains(START_TAG) == true) {
+                        shellOutputCache.clear()
+                    } else if (line?.contains(END_TAG) == true) {
+                        shellOutputCache.append(line?.substring(0, line?.indexOf(END_TAG) ?: 0))
+                        break
+                    } else {
+                        if (line?.contains(START_TAG) == false && line?.contains(END_TAG) == false) {
+                            shellOutputCache.append(line).append("\n")
+                        }
+                    }
                 }
-                result
+                shellOutputCache.let {
+                    var result = it.toString()
+                    if (result.isNotEmpty()) {
+                        result = result.substring(0, result.length - 1)
+                    }
+                    result
+                }
             }
         } catch (e: Exception) {
             Log.e("commitCmdSync-Lock", e.toString())
             "error"
         } finally {
             enterLockTime = 0L
-            mutex.unlock()
             currentIsIdle = true
         }
     }

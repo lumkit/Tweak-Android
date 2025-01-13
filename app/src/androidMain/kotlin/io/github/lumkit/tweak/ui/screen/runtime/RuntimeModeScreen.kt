@@ -31,7 +31,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -49,8 +48,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import dev.chrisbanes.haze.HazeStyle
-import dev.chrisbanes.haze.LocalHazeStyle
 import io.github.lumkit.tweak.LocalScreenNavigationController
 import io.github.lumkit.tweak.R
 import io.github.lumkit.tweak.common.shell.provide.ReusableShells
@@ -78,53 +75,45 @@ fun RuntimeModeScreen(
         )
     }
 ) {
-    CompositionLocalProvider(
-        LocalHazeStyle provides HazeStyle(
-            tints = emptyList(),
-            backgroundColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-
-        LaunchedEffect(viewModel) {
-            if (storageStore.getBoolean(Const.APP_ACCEPT_RISK)) {
-                viewModel.initRootModeConfig {
-                    Toast.makeText(activity, it.makeText(), Toast.LENGTH_SHORT).show()
-                }
+    LaunchedEffect(viewModel) {
+        if (storageStore.getBoolean(Const.APP_ACCEPT_RISK)) {
+            viewModel.initRootModeConfig {
+                Toast.makeText(activity, it.makeText(), Toast.LENGTH_SHORT).show()
             }
         }
+    }
 
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .fillMaxSize()
+                .padding(it),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Column(
+            AnimatedLogo(
                 modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .fillMaxSize()
-                    .padding(it),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                AnimatedLogo(
-                    modifier = Modifier
-                        .padding(vertical = 32.dp)
-                        .size(160.dp),
-                    isStart = true
-                )
-                Text(
-                    text = stringResource(R.string.text_runtime_mode_title),
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = .45f),
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.size(16.dp))
-                Text(
-                    text = stringResource(R.string.text_runtime_mode_subtitle),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.size(16.dp))
-                FolderItems(viewModel, storageStore)
-            }
+                    .padding(vertical = 32.dp)
+                    .size(160.dp),
+                isStart = true
+            )
+            Text(
+                text = stringResource(R.string.text_runtime_mode_title),
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = .45f),
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.size(16.dp))
+            Text(
+                text = stringResource(R.string.text_runtime_mode_subtitle),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.size(16.dp))
+            FolderItems(viewModel, storageStore)
         }
     }
 }

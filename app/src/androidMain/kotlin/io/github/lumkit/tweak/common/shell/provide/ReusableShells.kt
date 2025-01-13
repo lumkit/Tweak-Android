@@ -3,6 +3,7 @@ package io.github.lumkit.tweak.common.shell.provide
 import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.model.Const
 import java.util.concurrent.ConcurrentHashMap
+import androidx.core.content.edit
 
 object ReusableShells {
     private val shells = ConcurrentHashMap<String, ReusableShell>()
@@ -27,7 +28,7 @@ object ReusableShells {
     }
 
     fun changeUserIdAtAll(id: String) {
-        TweakApplication.shared.edit().putString(Const.APP_SHELL_ROOT_USER, id).apply()
+        TweakApplication.shared.edit { putString(Const.APP_SHELL_ROOT_USER, id) }
         destroyAll()
     }
 

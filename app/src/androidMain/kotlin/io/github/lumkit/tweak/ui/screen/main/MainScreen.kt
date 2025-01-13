@@ -18,12 +18,15 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -39,9 +42,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import io.github.lumkit.tweak.LocalScreenNavigationController
 import io.github.lumkit.tweak.R
 import io.github.lumkit.tweak.ui.component.BottomAlignmentOffsetPositionProvider
 import io.github.lumkit.tweak.ui.component.PlainTooltipBox
+import io.github.lumkit.tweak.ui.screen.ScreenRoute
 import io.github.lumkit.tweak.ui.screen.main.page.FunctionPage
 import io.github.lumkit.tweak.ui.screen.main.page.MinePage
 import io.github.lumkit.tweak.ui.screen.main.page.OverviewPage
@@ -125,7 +130,7 @@ private fun ToolBar(coroutineScope: CoroutineScope, pagerState: PagerState, navI
             NavBar(coroutineScope = coroutineScope, pagerState = pagerState, navItems = navItems)
         },
         actions = {
-
+            TopActions()
         }
     )
 }
@@ -215,6 +220,36 @@ private fun NavBar(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TopActions() {
+    val navHostController = LocalScreenNavigationController.current
+
+    CompositionLocalProvider(
+        LocalContentColor provides MaterialTheme.colorScheme.outline
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            IconButton(
+                onClick = {
+                    navHostController.navigate(ScreenRoute.SETTINGS) {
+                        popUpTo(ScreenRoute.MAIN) {
+                            saveState = true
+                        }
+                    }
+                }
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_settings),
+                    contentDescription = null,
+                    modifier = Modifier.size(28.dp)
+                )
             }
         }
     }

@@ -1,35 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="text_runtime_mode_title">Tweak - 玩机工具箱</string>
-    <string name="text_runtime_mode_subtitle">选择运行模式</string>
-    <string name="text_runtime_mode_root_mode">ROOT模式</string>
-    <string name="text_runtime_mode_root_mode_tips">可以使用所有【查看/修改】功能</string>
-    <string name="text_use_protocol">使用协议</string>
-    <string name="text_use_protocol_content">在ROOT模式下，Tweak提供的所有功能都可以被访问，其中也包括一些具有一定危险性的功能。\n例如：删除出厂自带应用、控制处理器性能、写入或还原系统文件。\n\n使用过程中可能会因为操作不当或功能缺陷，导致你无法进入系统界面，或丢失重要数据。如果你从未听说过刷机、变砖、恢复出厂设置，并且没有备用设备，该模式可能并不适用于你！\n\n如果你愿意接受这些风险，使用时请务必小心谨慎，认真阅读各个功能的提示警示信息，不要轻易触动不理解的功能和按钮开关！\n务必不要在你用于【工作】或存有【重要数据】的手机上使用ROOT模式，以免造成无法挽回的损失！\n\n*Tweak可能会偶尔收集设备型号、设备厂家、设备ID信息、硬件配置参数、性能统计、温控配置等数据，用于改进适配情况。</string>
-    <string name="text_accept_risk">接受风险</string>
-    <string name="text_accept_risk_tips">我已了解并同意承担风险</string>
-    <string name="text_cancel">取消</string>
-    <string name="text_accept_and_continue">同意继续</string>
-    <string name="text_init_app">应用初始化</string>
-    <string name="text_init_app_success">初始化完毕！</string>
-    <string name="text_confirm">确认</string>
-    <string name="text_retry">重试</string>
-    <string name="text_exit_app">退出软件</string>
-    <string name="nav_overview">概览</string>
-    <string name="nav_function">功能</string>
-    <string name="nav_mine">我的</string>
-    <string name="text_memory">内存</string>
-    <string name="text_memory_disk">物理内存</string>
-    <string name="text_storage">外部存储</string>
-    <string name="text_memory_free">可用</string>
-    <string name="text_swap">交换分区</string>
-    <string name="text_total_external_storage">总空间</string>
-    <string name="text_used_external_storage">已使用</string>
-    <string name="text_load">负载</string>
-    <string name="text_change_root_user">切换ROOT命令</string>
-    <string name="text_change_root_user_tip">当前</string>
-    <string name="text_change_user">切换命令</string>
-    <string name="text_cpu_composition">簇集</string>
-    <string name="text_running_duration">已开机</string>
-    <string name="text_goto_websit">访问Tweak官网</string>
+    <string name="text_search_functions">搜索功能项</string>
 </resources>

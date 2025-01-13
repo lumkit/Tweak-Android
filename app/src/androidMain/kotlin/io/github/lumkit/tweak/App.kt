@@ -1,5 +1,10 @@
 package io.github.lumkit.tweak
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -17,6 +22,7 @@ import io.github.lumkit.tweak.ui.screen.ScreenRoute
 import io.github.lumkit.tweak.ui.screen.main.MainScreen
 import io.github.lumkit.tweak.ui.screen.protocol.ProtocolScreen
 import io.github.lumkit.tweak.ui.screen.runtime.RuntimeModeScreen
+import io.github.lumkit.tweak.ui.screen.settings.SettingsScreen
 
 val LocalScreenNavigationController = staticCompositionLocalOf<NavHostController> { error("LocalScreenNavigationController is not provided.") }
 
@@ -34,19 +40,22 @@ fun App() {
 @Composable
 private fun Routing() {
     val navHostController = LocalScreenNavigationController.current
-    val storageStore = LocalStorageStore.current
-
-    val startDestination = if (storageStore.getBoolean(Const.APP_SHARED_PROTOCOL_AGREE_STATE)) {
-        ScreenRoute.RUNTIME_MODE
-    } else if (storageStore.getBoolean(Const.APP_SHARED_RUNTIME_MODE_STATE)) {
-        ScreenRoute.MAIN
-    } else {
-        ScreenRoute.PROTOCOL
-    }
 
     NavHost(
         navController = navHostController,
         startDestination = ScreenRoute.RUNTIME_MODE,
+        enterTransition = {
+            fadeIn() + scaleIn(initialScale = .5f)
+        },
+        exitTransition = {
+            fadeOut() + scaleOut(targetScale = 1.5f)
+        },
+        popEnterTransition = {
+            fadeIn() + scaleIn(initialScale = .5f)
+        },
+        popExitTransition = {
+            fadeOut() + scaleOut(targetScale = 1.5f)
+        }
     ) {
         composable(route = ScreenRoute.PROTOCOL) {
             ProtocolScreen()
@@ -56,8 +65,19 @@ private fun Routing() {
             RuntimeModeScreen()
         }
 
-        composable(route = ScreenRoute.MAIN) {
+        composable(
+            route = ScreenRoute.MAIN,
+        ) {
             MainScreen()
+        }
+
+        composable(
+            route = ScreenRoute.SETTINGS,
+            enterTransition = {
+                fadeIn() + scaleIn(initialScale = .5f)
+            },
+        ) {
+            SettingsScreen()
         }
     }
 }
