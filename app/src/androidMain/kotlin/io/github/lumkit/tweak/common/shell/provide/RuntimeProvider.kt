@@ -44,9 +44,12 @@ object RuntimeProvider {
     /**
      * 获取Process
      */
-    fun getProcess(run: String): Process {
+    fun getProcess(run: String, redirectErrorStream: Boolean = false): Process {
         val path = smartWorkPath()
-        val process = Runtime.getRuntime().exec(run)
+        val process = ProcessBuilder()
+            .command(run)
+            .redirectErrorStream(redirectErrorStream)
+            .start()
         if (path != null) {
             val outputStream = process.outputStream
             outputStream.write("export ".toByteArray())

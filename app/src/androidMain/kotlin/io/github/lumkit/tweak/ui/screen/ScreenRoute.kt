@@ -5,5 +5,6 @@ object ScreenRoute {
     const val RUNTIME_MODE = "runtime_mode"
     const val MAIN = "main"
     const val SETTINGS = "settings"
-    const val VAB_UPDATE = "vab-update"
+    const val VAB_UPDATE = "vab_update"
+    const val SMART_NOTICE = "smart_notice"
 }

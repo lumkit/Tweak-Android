@@ -1,4 +1,6 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.text.SimpleDateFormat
+import java.util.Date
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -14,7 +16,7 @@ kotlin {
             jvmTarget.set(JvmTarget.JVM_17)
         }
     }
-    
+
     sourceSets {
 
         commonMain.dependencies {
@@ -63,11 +65,13 @@ android {
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
+        val versionCodeFormat = SimpleDateFormat("yyMMddHH")
+
         applicationId = "io.github.lumkit.tweak"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = versionCodeFormat.format(Date()).toInt().also { println("version code: $it") }
+        versionName = "1.0.0"
     }
 
     signingConfigs {

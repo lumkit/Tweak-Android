@@ -28,6 +28,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -36,14 +37,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import io.github.lumkit.tweak.LocalScreenNavigationController
 import io.github.lumkit.tweak.R
+import io.github.lumkit.tweak.common.util.ServiceUtils
+import io.github.lumkit.tweak.common.util.startService
+import io.github.lumkit.tweak.services.KeepAliveService
 import io.github.lumkit.tweak.ui.component.BottomAlignmentOffsetPositionProvider
 import io.github.lumkit.tweak.ui.component.PlainTooltipBox
 import io.github.lumkit.tweak.ui.screen.ScreenRoute
@@ -62,6 +68,7 @@ data class NavItem(
 
 @Composable
 fun MainScreen() {
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
     val functionLabel = stringResource(R.string.nav_function)
@@ -97,6 +104,13 @@ fun MainScreen() {
     }
 
     val pagerState = rememberPagerState(initialPage = 1) { navItems.size }
+
+    // 启动服务
+    SideEffect {
+        if (!ServiceUtils.isServiceRunning(context, KeepAliveService::class.java.name)) {
+            context.startService(KeepAliveService::class.java)
+        }
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -239,9 +253,11 @@ private fun TopActions() {
             IconButton(
                 onClick = {
                     navHostController.navigate(ScreenRoute.SETTINGS) {
-                        popUpTo(ScreenRoute.MAIN) {
+                        popUpTo(navHostController.currentBackStackEntry?.destination?.route ?: ScreenRoute.MAIN) {
                             saveState = true
                         }
+                        launchSingleTop = true
+                        restoreState = true
                     }
                 }
             ) {

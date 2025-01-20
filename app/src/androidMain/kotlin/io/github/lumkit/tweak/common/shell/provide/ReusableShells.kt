@@ -9,8 +9,8 @@ object ReusableShells {
     private val shells = ConcurrentHashMap<String, ReusableShell>()
 
     @Synchronized
-    fun getInstance(key: String, user: String = rootUser): ReusableShell {
-        val shell = ReusableShell(user)
+    fun getInstance(key: String, user: String = rootUser, redirectErrorStream: Boolean = false): ReusableShell {
+        val shell = ReusableShell(user, redirectErrorStream)
         if (!shells.containsKey(key)) {
             shells[key] = shell
         }
@@ -86,10 +86,10 @@ object ReusableShells {
     /**
      * 同步执行命令行
      */
-    suspend fun execSync(vararg cmd: String): String = defaultReusableShell.commitCmdSync(cmd.joinToString("\n\n"))
+    suspend fun execSync(vararg cmd: String): String = defaultReusableShell.commitCmdSync(cmd.joinToString("\n"))
 
     /**
      * 同步执行命令行
      */
-    suspend fun execSync(cmd: List<String>): String = defaultReusableShell.commitCmdSync(cmd.joinToString("\n\n"))
+    suspend fun execSync(cmd: List<String>): String = defaultReusableShell.commitCmdSync(cmd.joinToString("\n"))
 }

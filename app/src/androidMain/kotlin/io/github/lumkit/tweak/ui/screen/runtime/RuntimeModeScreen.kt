@@ -48,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import io.github.lumkit.tweak.LocalScreenNavigationController
 import io.github.lumkit.tweak.R
 import io.github.lumkit.tweak.common.shell.provide.ReusableShells
@@ -330,7 +331,7 @@ private fun CheckPermissionsDialog(
                             LaunchedEffect(Unit) {
                                 viewModel.setInitConfigDialogState(false)
                                 navHostController.navigate(ScreenRoute.MAIN) {
-                                    popUpTo(ScreenRoute.RUNTIME_MODE) {
+                                    popUpTo(navHostController.graph.findStartDestination().id) {
                                         inclusive = true
                                     }
                                 }

@@ -24,6 +24,7 @@ object Config {
                 }
                 return dir
             }
+        val cacheDir: File = File("/data/ota_package")
     }
 
     val ROOT_USERS = listOf(

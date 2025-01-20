@@ -13,6 +13,8 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.datetime.Clock
 import java.io.BufferedReader
 import java.io.BufferedWriter
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * @author github@lumkit
@@ -21,6 +23,7 @@ import java.io.BufferedWriter
  */
 class ReusableShell(
     val user: String,
+    private val redirectErrorStream: Boolean = false,
 ) {
     companion object {
         private const val CHECK_ROOT_STATE =
@@ -53,6 +56,21 @@ class ReusableShell(
     private val mutex = Mutex()
     private var currentIsIdle = true
 
+    private val coroutineScope = CoroutineScope(Dispatchers.IO)
+    private val listenerPool = ConcurrentHashMap<String, (String) -> Unit>()
+
+    fun setOnReadLineListener(lineListener: (String) -> Unit) {
+        listenerPool["default"] = lineListener
+    }
+
+    fun addOnReadLineListener(name: String = UUID.randomUUID().toString(), lineListener: (String) -> Unit) {
+        listenerPool[name] = lineListener
+    }
+
+    fun removeOnReadLineListener(name: String) {
+        listenerPool.remove(name)
+    }
+
     val isIdle: Boolean
         get() {
             return currentIsIdle
@@ -83,7 +101,7 @@ class ReusableShell(
             mutex.withLock {
                 enterLockTime = Clock.System.now().toEpochMilliseconds()
                 try {
-                    val process = RuntimeProvider.getProcess(user)
+                    val process = RuntimeProvider.getProcess(user, redirectErrorStream)
                     this@ReusableShell.process = process
                     this@ReusableShell.writer = process.outputStream.bufferedWriter()
                     this@ReusableShell.reader = process.inputStream.bufferedReader()
@@ -107,7 +125,7 @@ class ReusableShell(
                         }
                     }
                 }catch (e: Exception) {
-                    Log.e("getRuntimeShell", e.message ?: "Unknown error")
+                    Log.e("ReusableShell", e.message ?: "Unknown error")
                 } finally {
                     enterLockTime = 0L
                 }
@@ -126,12 +144,10 @@ class ReusableShell(
                 currentIsIdle = false
 
                 writer?.apply {
-                    withContext(Dispatchers.IO) {
-                        write(ECHO_START)
-                        write(cmd)
-                        write(ECHO_END)
-                        flush()
-                    }
+                    write(ECHO_START)
+                    write(cmd + "\n")
+                    write(ECHO_END)
+                    flush()
                 }
 
                 val shellOutputCache = StringBuilder()
@@ -140,11 +156,21 @@ class ReusableShell(
                     if (line?.contains(START_TAG) == true) {
                         shellOutputCache.clear()
                     } else if (line?.contains(END_TAG) == true) {
-                        shellOutputCache.append(line?.substring(0, line?.indexOf(END_TAG) ?: 0))
                         break
                     } else {
                         if (line?.contains(START_TAG) == false && line?.contains(END_TAG) == false) {
-                            shellOutputCache.append(line).append("\n")
+                            line?.let { text ->
+                                coroutineScope.launch {
+                                    try {
+                                        listenerPool.onEach {
+                                            it.value.invoke(text)
+                                        }
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    }
+                                }
+                                shellOutputCache.append(text).append("\n")
+                            }
                         }
                     }
                 }

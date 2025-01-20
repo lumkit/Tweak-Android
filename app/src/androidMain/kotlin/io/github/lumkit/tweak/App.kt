@@ -4,22 +4,22 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import io.github.lumkit.tweak.model.Const
-import io.github.lumkit.tweak.ui.local.LocalStorageStore
 import io.github.lumkit.tweak.ui.screen.ScreenRoute
 import io.github.lumkit.tweak.ui.screen.main.MainScreen
+import io.github.lumkit.tweak.ui.screen.main.page.FunctionPageViewModel
 import io.github.lumkit.tweak.ui.screen.protocol.ProtocolScreen
 import io.github.lumkit.tweak.ui.screen.runtime.RuntimeModeScreen
 import io.github.lumkit.tweak.ui.screen.settings.SettingsScreen
@@ -39,22 +39,26 @@ fun App() {
 
 @Composable
 private fun Routing() {
+    val context = LocalContext.current
     val navHostController = LocalScreenNavigationController.current
+
+    val functionPageViewModel = viewModel { FunctionPageViewModel(context) }
+    val platesState by functionPageViewModel.plateState.collectAsStateWithLifecycle()
 
     NavHost(
         navController = navHostController,
         startDestination = ScreenRoute.RUNTIME_MODE,
         enterTransition = {
-            fadeIn() + scaleIn(initialScale = .5f)
+            slideInHorizontally { it } + fadeIn()
         },
         exitTransition = {
-            fadeOut() + scaleOut(targetScale = 1.5f)
+            scaleOut(targetScale = .9f) + fadeOut()
         },
         popEnterTransition = {
-            fadeIn() + scaleIn(initialScale = .5f)
+            scaleIn(initialScale = .9f) + fadeIn()
         },
         popExitTransition = {
-            fadeOut() + scaleOut(targetScale = 1.5f)
+            slideOutHorizontally { it } + fadeOut()
         }
     ) {
         composable(route = ScreenRoute.PROTOCOL) {
@@ -73,11 +77,19 @@ private fun Routing() {
 
         composable(
             route = ScreenRoute.SETTINGS,
-            enterTransition = {
-                fadeIn() + scaleIn(initialScale = .5f)
-            },
         ) {
             SettingsScreen()
+        }
+
+        platesState.forEach { modules ->
+            modules.modules.forEach { module ->
+                composable(
+                    route = module.route,
+                    deepLinks = module.deepLinks
+                ) {
+                    module.screen()
+                }
+            }
         }
     }
 }

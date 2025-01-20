@@ -1,4 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="text_search_functions">搜索功能项</string>
+    <string name="text_smart_notice">灵动通知</string>
+    <string name="text_keep_alive">Keep Alive</string>
+    <string name="text_auto_start">自启动</string>
+    <string name="text_auto_start_tips">部分国产系统需要手动开启自启动权限</string>
+    <string name="text_please_open_app_auto_start">建议给Tweak设置电池优化白名单和自启动权限</string>
+    <string name="text_device_info">系统信息</string>
+    <string name="text_device_brand">设备品牌</string>
+    <string name="text_device_mode">设备型号</string>
+    <string name="text_android_version">Android版本</string>
+    <string name="text_ota_support">OTA更新</string>
+    <string name="text_support">支持</string>
+    <string name="text_not_support">不支持</string>
+    <string name="text_alive_slot">活动插槽</string>
+    <string name="text_ota_update_tips">使用方法:\n1. 选择ROM压缩包\n2. 点击开始安装更新\n3. 显示“需要重启应用更新”后，可去面具或KernelSU中进行“安装到未使用槽位（OTA后）”实现保留Root\n\n小提示：不知道按钮干啥的，长按按钮显示功能描述</string>
+    <string name="text_unknown_error">未知错误</string>
+    <string name="text_status_idle">空闲状态</string>
+    <string name="text_checking_for_update">检查更新中</string>
+    <string name="text_update_available">更新可用</string>
+    <string name="text_status_downloading">安装更新中…</string>
+    <string name="text_status_verifying">更新验证中…</string>
+    <string name="text_status_finishing">更新已完成</string>
+    <string name="text_status_need_reboot">需要重启应用更新！</string>
+    <string name="text_status_error_event">任务出错</string>
+    <string name="text_status_attempting_rollback">尝试回滚中</string>
+    <string name="text_status_disabled">已禁用</string>
+    <string name="text_rom_path">ROM路径</string>
+    <string name="text_start_vab_update">开始安装更新</string>
+    <string name="text_ota_merge">更新合并</string>
+    <string name="text_ota_merge_tips">等待之前的更新合并，仅在重启到新槽位后可用。适用于处理OTA更新后的合并步骤。</string>
+    <string name="text_ota_cancel">取消更新</string>
+    <string name="text_ota_cancel_tips">取消当前进行中的更新并退出。适用于中止更新过程。</string>
+    <string name="text_ota_reset_status">重置更新</string>
+    <string name="text_ota_reset_status_tips">重置已经应用的更新并退出。通常用于撤销或回滚已完成的更新操作。</string>
+    <string name="text_start_unzip">开始解压…</string>
+    <string name="text_installing">安装中...</string>
+    <string name="text_vab_updater_task_is_running">更新任务未提交，请耐心等待！</string>
+    <string name="text_success_block">执行成功！</string>
 </resources>

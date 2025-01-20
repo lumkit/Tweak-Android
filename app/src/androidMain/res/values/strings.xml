@@ -62,4 +62,6 @@
     <string name="text_refresh_tick">性能监控刷新间隔</string>
     <string name="text_refresh_tick_set">调整间隔</string>
     <string name="text_fun_system_tools">系统工具</string>
+    <string name="text_search_functions">搜索功能项</string>
+    <string name="text_vab_updater">VAB系统更新</string>
 </resources>

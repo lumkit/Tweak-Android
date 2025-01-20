@@ -143,13 +143,17 @@ class RuntimeModeViewModel(
         ) {
             ActivityCompat.requestPermissions(
                 context as ComponentActivity,
-                arrayOf(
+                mutableListOf(
                     Manifest.permission.READ_EXTERNAL_STORAGE,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE,
                     Manifest.permission.MOUNT_UNMOUNT_FILESYSTEMS,
                     Manifest.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
-                    Manifest.permission.WAKE_LOCK
-                ),
+                    Manifest.permission.WAKE_LOCK,
+                ).apply {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        add(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                }.toTypedArray(),
                 0x11
             )
         }
@@ -181,6 +185,10 @@ class RuntimeModeViewModel(
                     Manifest.permission.MANAGE_EXTERNAL_STORAGE,
                 )
             )
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requiredPermission.add(Manifest.permission.POST_NOTIFICATIONS)
         }
 
         requiredPermission.onEach {

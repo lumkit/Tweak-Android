@@ -2,8 +2,11 @@ package io.github.lumkit.tweak.ui.screen.settings
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -98,12 +101,15 @@ import kotlin.reflect.KProperty1
 import kotlin.reflect.full.*
 import kotlin.reflect.jvm.isAccessible
 import kotlin.reflect.jvm.javaField
+import androidx.core.net.toUri
+import io.github.lumkit.tweak.ui.local.StorageStore
 
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel { SettingsViewModel() }
 ) {
     val context = LocalContext.current
+    val storageStore = LocalStorageStore.current
 
     ScreenScaffold(
         title = {
@@ -121,7 +127,7 @@ fun SettingsScreen(
         ) {
             Spacer(modifier = Modifier.size(8.dp))
             SchemeModules(context)
-            AppModules()
+            AppModules(context, storageStore)
             Spacer(modifier = Modifier.size(16.dp))
         }
     }
@@ -673,13 +679,17 @@ private fun ColorPickerDialog(
     }
 }
 
-@SuppressLint("DefaultLocale")
+@SuppressLint("DefaultLocale", "BatteryLife")
 @Composable
-private fun AppModules() {
+private fun AppModules(context: Context, storageStore: StorageStore) {
+
     var userExpanded by rememberSaveable { mutableStateOf(false) }
     var user by remember { mutableStateOf(ReusableShells.getDefaultInstance.user) }
     var refreshTickDialogState by rememberSaveable { mutableStateOf(false) }
     val tick = rememberSaveable { mutableLongStateOf(Config.REFRESH_TICK) }
+    var autoStart by remember { mutableStateOf(storageStore.getBoolean(Const.APP_AUTO_START_SERVICE)) }
+
+    val powerManager = remember { context.getSystemService(Context.POWER_SERVICE) as PowerManager }
 
     GroupDetail(
         modifier = Modifier.fillMaxWidth(),
@@ -689,6 +699,36 @@ private fun AppModules() {
             )
         }
     ) {
+        DetailItem(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = {
+                val hasIgnored = powerManager.isIgnoringBatteryOptimizations(context.packageName)
+                if (!hasIgnored) {
+                    val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+                    intent.setData("package:${context.packageName}".toUri())
+                    context.startActivity(intent)
+                } else {
+                    autoStart = !autoStart
+                    storageStore.putBoolean(Const.APP_AUTO_START_SERVICE, autoStart)
+                }
+            },
+            title = {
+                Text(
+                    text = stringResource(R.string.text_auto_start)
+                )
+            },
+            subTitle = {
+                Text(
+                    text = stringResource(R.string.text_auto_start_tips)
+                )
+            },
+            actions = {
+                Switch(
+                    checked = autoStart,
+                    onCheckedChange = null
+                )
+            }
+        )
         DetailItem(
             modifier = Modifier.fillMaxWidth(),
             onClick = {
