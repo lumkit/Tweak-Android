@@ -60,14 +60,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
+import io.github.lumkit.tweak.LocalScreenNavigationController
 import io.github.lumkit.tweak.R
 import io.github.lumkit.tweak.common.shell.provide.ReusableShells
+import io.github.lumkit.tweak.common.util.getVersionCode
+import io.github.lumkit.tweak.common.util.getVersionName
+import io.github.lumkit.tweak.common.util.startBrowser
 import io.github.lumkit.tweak.data.DarkModeState
 import io.github.lumkit.tweak.data.asStringId
 import io.github.lumkit.tweak.model.Config
@@ -85,10 +93,12 @@ import io.github.lumkit.tweak.ui.local.LocalThemeStore
 import io.github.lumkit.tweak.ui.local.Material3
 import io.github.lumkit.tweak.ui.local.Scheme
 import io.github.lumkit.tweak.ui.local.Schemes
+import io.github.lumkit.tweak.ui.local.StorageStore
 import io.github.lumkit.tweak.ui.local.ThemeStore
 import io.github.lumkit.tweak.ui.local.json
 import io.github.lumkit.tweak.ui.local.toColor
 import io.github.lumkit.tweak.ui.local.toHex
+import io.github.lumkit.tweak.ui.screen.ScreenRoute
 import io.mhssn.colorpicker.ColorPicker
 import io.mhssn.colorpicker.ColorPickerType
 import io.mhssn.colorpicker.ext.transparentBackground
@@ -98,11 +108,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlin.reflect.KProperty1
-import kotlin.reflect.full.*
+import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.isAccessible
 import kotlin.reflect.jvm.javaField
-import androidx.core.net.toUri
-import io.github.lumkit.tweak.ui.local.StorageStore
 
 @Composable
 fun SettingsScreen(
@@ -110,6 +118,7 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val storageStore = LocalStorageStore.current
+    val navHostController = LocalScreenNavigationController.current
 
     ScreenScaffold(
         title = {
@@ -128,6 +137,7 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.size(8.dp))
             SchemeModules(context)
             AppModules(context, storageStore)
+            About(context, navHostController, viewModel)
             Spacer(modifier = Modifier.size(16.dp))
         }
     }
@@ -856,4 +866,165 @@ private fun RefreshTickDialog(
             }
         }
     )
+}
+
+@Composable
+private fun About(
+    context: Context,
+    navHostController: NavHostController,
+    viewModel: SettingsViewModel
+) {
+    val versionName = remember { context.getVersionName() }
+    val versionCode = remember { context.getVersionCode() }
+
+    GroupDetail(
+        title = {
+            Text(text = stringResource(R.string.text_about))
+        }
+    ) {
+        DetailItem(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = {
+                viewModel.checkVersion(context.getVersionCode())
+            },
+            title = {
+                Text(
+                    text = stringResource(R.string.text_app_version)
+                )
+            },
+            subTitle = {
+                Text(
+                    text = buildString {
+                        append(versionName)
+                        append(" ($versionCode)")
+                    }
+                )
+            },
+            actions = {
+                Icon(
+                    painter = painterResource(R.drawable.ic_right),
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        )
+
+        DetailItem(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = {
+                context.startBrowser("https://tweak.lumtoolkit.com/")
+            },
+            title = {
+                Text(
+                    text = stringResource(R.string.text_app_website)
+                )
+            },
+            subTitle = {
+                Text(
+                    text = buildAnnotatedString {
+                        withStyle(
+                            style = SpanStyle(
+                                textDecoration = TextDecoration.Underline,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            append("https://tweak.lumtoolkit.com/")
+                        }
+                    }
+                )
+            },
+            actions = {
+                Icon(
+                    painter = painterResource(R.drawable.ic_right),
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        )
+
+        DetailItem(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = {
+                context.startBrowser("mqqapi://card/show_pslcard?src_type=internal&version=1&uin=2205903933&card_type=person&source=qrcode")
+            },
+            title = {
+                Text(
+                    text = stringResource(R.string.text_app_developer)
+                )
+            },
+            subTitle = {
+                Text(
+                    text = buildAnnotatedString {
+                        withLink(
+                            link = LinkAnnotation.Clickable(
+                                tag = "",
+                                linkInteractionListener = {
+                                    context.startBrowser("https://github.com/lumkit")
+                                }
+                            )
+                        ) {
+                            withStyle(
+                                style = SpanStyle(
+                                    textDecoration = TextDecoration.Underline,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                append(stringResource(R.string.text_app_developer_tips))
+                            }
+                        }
+                    }
+                )
+            },
+            actions = {
+                Icon(
+                    painter = painterResource(R.drawable.ic_right),
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        )
+
+        DetailItem(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = {
+                context.startBrowser("mqqapi://card/show_pslcard?src_type=internal&version=1&uin=768798964&card_type=group&source=qrcode")
+            },
+            title = {
+                Text(
+                    text = stringResource(R.string.text_qq_group)
+                )
+            },
+            subTitle = {
+                Text(
+                    text = stringResource(R.string.text_qq_group_tips)
+                )
+            },
+            actions = {
+                Icon(
+                    painter = painterResource(R.drawable.ic_right),
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        )
+
+        DetailItem(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = {
+                navHostController.navigate(ScreenRoute.OPEN_SOURCE)
+            },
+            title = {
+                Text(
+                    text = stringResource(R.string.text_open_sources)
+                )
+            },
+            actions = {
+                Icon(
+                    painter = painterResource(R.drawable.ic_right),
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        )
+    }
 }

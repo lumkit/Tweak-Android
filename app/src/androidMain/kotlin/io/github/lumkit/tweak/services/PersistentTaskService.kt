@@ -90,10 +90,6 @@ class PersistentTaskService : Service() {
                 val progress = intent.getFloatExtra("progress", 0f) * 100f
                 val resStatus = intent.getIntExtra("res", R.string.text_status_idle)
 
-                if (resStatus == R.string.text_status_idle) {
-                    return START_STICKY
-                }
-
                 val deepLinkUri = "${Const.Navigation.DEEP_LINE}/${ScreenRoute.VAB_UPDATE}".toUri()
                 val deepLinkIntent = Intent(Intent.ACTION_VIEW, deepLinkUri).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -124,12 +120,15 @@ class PersistentTaskService : Service() {
                     .setContentTitle(getString(R.string.text_vab_updater))
                     .setContentText(contentText)
                     .setSmallIcon(R.mipmap.ic_tweak_logo_round)
-                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                     .setContentIntent(pendingIntent)
 
-                if (resStatus == R.string.text_status_downloading) {
+                if (resStatus == R.string.text_status_downloading
+                    || resStatus == R.string.text_status_finishing
+                    || resStatus == R.string.text_status_verifying) {
                     builder.setProgress(100, progress.toInt(), false)
                         .setAutoCancel(false)
+                        .setOngoing(true)
                 } else {
                     builder.setAutoCancel(true)
                 }

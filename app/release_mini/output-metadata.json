@@ -11,9 +11,9 @@
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 25012101,
-      "versionName": "1.0.0",
-      "outputFile": "app-release_mini.apk"
+      "versionCode": 25012117,
+      "versionName": "0.0.2",
+      "outputFile": "Tweak-0.0.2-25012117-RELEASE-MINI.APK"
     }
   ],
   "elementType": "File",
@@ -22,14 +22,14 @@
       "minApi": 28,
       "maxApi": 30,
       "baselineProfiles": [
-        "baselineProfiles/1/app-release_mini.dm"
+        "baselineProfiles/1/Tweak-0.0.2-25012117-RELEASE-MINI.dm"
       ]
     },
     {
       "minApi": 31,
       "maxApi": 2147483647,
       "baselineProfiles": [
-        "baselineProfiles/0/app-release_mini.dm"
+        "baselineProfiles/0/Tweak-0.0.2-25012117-RELEASE-MINI.dm"
       ]
     }
   ],

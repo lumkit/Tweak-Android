@@ -89,7 +89,8 @@ fun VabUpdaterScreen(
             Text(
                 text = stringResource(R.string.text_vab_updater)
             )
-        }) {
+        }
+    ) {
         Column(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())

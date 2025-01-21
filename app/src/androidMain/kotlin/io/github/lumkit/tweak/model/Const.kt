@@ -1,6 +1,7 @@
 package io.github.lumkit.tweak.model
 
 object Const {
+    const val APP_AUTHORIZATION = "app_authorization"
     const val APP_AUTO_START_SERVICE: String = "app_auto_start_service"
     const val APP_OVERVIEW_TICK: String = "app_overview_tick"
     const val APP_SHELL_ROOT_USER: String = "app_shell_root_user"

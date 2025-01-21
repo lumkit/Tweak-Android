@@ -1,3 +1,5 @@
+import com.android.build.api.variant.FilterConfiguration
+import com.android.build.gradle.internal.api.ApkVariantOutputImpl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -71,7 +73,7 @@ android {
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = versionCodeFormat.format(Date()).toInt().also { println("version code: $it") }
-        versionName = "1.0.0"
+        versionName = "0.0.2"
     }
 
     signingConfigs {
@@ -91,7 +93,11 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+        jniLibs {
+            useLegacyPackaging = true
+        }
     }
+
     buildTypes {
         debug {
             isMinifyEnabled = false
@@ -127,6 +133,39 @@ android {
             signingConfig = signingConfigs.getByName(signName)
         }
     }
+
+    val abiCodes = mapOf(
+        "armeabi-v7a" to 1,
+        "arm64-v8a" to 2,
+        "x86" to 3,
+        "x86_64" to 4
+    )
+    applicationVariants.all {
+        val buildType = this.buildType.name
+        val variant = this
+        outputs.all {
+            val name =
+                this.filters.find { it.filterType == FilterConfiguration.FilterType.ABI.name }?.identifier
+            val baseAbiCode = abiCodes[name]
+            if (baseAbiCode != null) {
+                //写入cpu架构信息
+                variant.buildConfigField("String", "CUP_ABI", "\"${name}\"")
+            }
+            if (this is ApkVariantOutputImpl) {
+                outputFileName = "Tweak-${defaultConfig.versionName}-${defaultConfig.versionCode}-${buildType.uppercase()}.APK".replace("_", "-")
+            }
+        }
+    }
+
+    sourceSets {
+        getByName("main") {
+            assets {
+                srcDirs("src\\main\\assets")
+            }
+            jniLibs.srcDirs("src\\main\\jniLibs")
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -139,6 +178,9 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
+        aidl = true
+        prefab = true
     }
 }
 

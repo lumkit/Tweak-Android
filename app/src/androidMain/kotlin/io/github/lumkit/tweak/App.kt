@@ -22,6 +22,7 @@ import io.github.lumkit.tweak.ui.screen.main.MainScreen
 import io.github.lumkit.tweak.ui.screen.main.page.FunctionPageViewModel
 import io.github.lumkit.tweak.ui.screen.protocol.ProtocolScreen
 import io.github.lumkit.tweak.ui.screen.runtime.RuntimeModeScreen
+import io.github.lumkit.tweak.ui.screen.settings.OpenSourceScreen
 import io.github.lumkit.tweak.ui.screen.settings.SettingsScreen
 
 val LocalScreenNavigationController = staticCompositionLocalOf<NavHostController> { error("LocalScreenNavigationController is not provided.") }
@@ -90,6 +91,12 @@ private fun Routing() {
                     module.screen()
                 }
             }
+        }
+
+        composable(
+            route = ScreenRoute.OPEN_SOURCE
+        ) {
+            OpenSourceScreen()
         }
     }
 }

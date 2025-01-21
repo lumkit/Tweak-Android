@@ -38,6 +38,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -159,7 +160,7 @@ private fun BoxScope.Search(viewModel: FunctionPageViewModel, navHostController:
                 ListItem(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable {
+                        .clickable(enabled = it.enabled) {
                             viewModel.setSearchText("")
                             expanded = false
                             navHostController.navigate(it.route) {
@@ -169,10 +170,21 @@ private fun BoxScope.Search(viewModel: FunctionPageViewModel, navHostController:
                                 restoreState = true
                                 launchSingleTop = true
                             }
-                        },
+                        }.alpha(
+                            alpha = if (it.enabled) {
+                                1f
+                            } else {
+                                .5f
+                            }
+                        ),
                     headlineContent = {
                         Text(
-                            text = it.title
+                            text = it.title,
+                            textDecoration = if (it.enabled) {
+                                TextDecoration.None
+                            } else {
+                                TextDecoration.LineThrough
+                            }
                         )
                     },
                     leadingContent = {

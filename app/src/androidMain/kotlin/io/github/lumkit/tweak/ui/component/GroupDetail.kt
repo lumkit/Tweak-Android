@@ -73,7 +73,9 @@ fun DetailItem(
                     Text("")
                 }
             }
-            Column {
+            Column(
+                modifier = Modifier.align(Alignment.CenterStart)
+            ) {
                 ProvideTextStyle(
                     value = MaterialTheme.typography.titleMedium,
                 ) {
@@ -127,7 +129,9 @@ fun DetailItem(
                     Text("")
                 }
             }
-            Column {
+            Column(
+                modifier = Modifier.align(Alignment.CenterStart)
+            ) {
                 ProvideTextStyle(
                     value = MaterialTheme.typography.titleMedium,
                 ) {

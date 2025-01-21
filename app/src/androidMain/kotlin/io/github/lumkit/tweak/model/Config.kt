@@ -5,6 +5,9 @@ import java.io.File
 import androidx.core.content.edit
 
 object Config {
+
+    const val DEBUG = false
+
     object Path {
         val binDir: File
             get() {

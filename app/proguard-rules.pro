@@ -5,5 +5,8 @@
 -keep class io.github.lumkit.tweak.ui.local.** { *; }
 -dontwarn io.github.lumkit.tweak.ui.local.**
 
+-keep class io.github.lumkit.tweak.util.Aes
+-dontwarn io.github.lumkit.tweak.util.Aes
+
 -keep class java.util.concurrent.** { *; }
 -dontwarn java.util.concurrent.**
