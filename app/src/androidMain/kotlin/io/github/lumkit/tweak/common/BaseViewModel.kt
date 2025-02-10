@@ -47,6 +47,7 @@ abstract class BaseViewModel : ViewModel() {
             it.printStackTrace()
             fail(it.makeText())
         },
+        onComplete: BaseViewModelScope.() -> Unit = {},
         block: suspend BaseViewModelScope.(CoroutineScope) -> Unit
     ) {
         val scope = object : BaseViewModelScope {
@@ -55,10 +56,12 @@ abstract class BaseViewModel : ViewModel() {
         viewModelScope.launch(
             CoroutineExceptionHandler { _, throwable ->
                 onError(scope, throwable)
+                onComplete(scope)
             }
         ) {
             withContext(Dispatchers.IO) {
                 scope.block(this)
+                onComplete(scope)
             }
         }
     }

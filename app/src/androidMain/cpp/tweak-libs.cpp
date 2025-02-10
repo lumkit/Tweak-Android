@@ -3,8 +3,7 @@
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_io_github_lumkit_tweak_common_TweakNative_getKernelPropLong(JNIEnv *env, jobject thiz,
-                                                                 jstring path) {
+Java_io_github_lumkit_tweak_common_TweakNative_getKernelPropLong(JNIEnv *env, jobject thiz, jstring path) {
     if (path == nullptr) {
         jclass npeCls = env->FindClass("java/lang/NullPointerException");
         if (npeCls != nullptr) { // 确保类被找到

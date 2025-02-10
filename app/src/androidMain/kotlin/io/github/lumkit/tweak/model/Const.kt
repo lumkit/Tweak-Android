@@ -14,6 +14,7 @@ object Const {
     const val APP_SHARED_PREFERENCE_ID: String = "shared"
     const val APP_WORK_STATUS = "app_work_status"
     const val APP_BATTERY_CURRENT_NOW_UNIT = "app_battery_current_now_unit"
+    const val APP_IGNORE_VERSION = "app_ignore_version"
 
     object Notification {
         const val NOTIFICATION_CHANNEL_NAME_DEFAULT = "Tweak-Android"

@@ -1,6 +1,7 @@
 package io.github.lumkit.tweak.net
 
 import io.github.lumkit.tweak.BuildConfig
+import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.model.Config
 import io.github.lumkit.tweak.net.pojo.RequestParams
 import io.github.lumkit.tweak.ui.local.json
@@ -43,7 +44,7 @@ suspend inline fun <reified T: RequestParams> HttpClient.postEncrypt(
 ): HttpResponse = post(url) {
     contentType(ContentType.Application.Json)
     if (!Config.DEBUG) {
-        setBody(Aes.encrypt(Json.encodeToString(requestParams)))
+        setBody(Aes.encrypt(TweakApplication.application.applicationContext, Json.encodeToString(requestParams)))
     } else {
         setBody(requestParams)
     }
@@ -55,7 +56,7 @@ suspend inline fun <reified T: RequestParams> HttpClient.putEncrypt(
 ): HttpResponse = put(url) {
     contentType(ContentType.Application.Json)
     if (!Config.DEBUG) {
-        setBody(Aes.encrypt(Json.encodeToString(requestParams)))
+        setBody(Aes.encrypt(TweakApplication.application.applicationContext, Json.encodeToString(requestParams)))
     } else {
         setBody(requestParams)
     }

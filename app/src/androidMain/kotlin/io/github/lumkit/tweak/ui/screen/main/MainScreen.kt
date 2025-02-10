@@ -1,11 +1,12 @@
 package io.github.lumkit.tweak.ui.screen.main
 
+import android.content.Context
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +17,8 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -28,10 +31,15 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,11 +52,15 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.lumkit.tweak.LocalScreenNavigationController
 import io.github.lumkit.tweak.R
 import io.github.lumkit.tweak.common.util.ServiceUtils
+import io.github.lumkit.tweak.common.util.getVersionCode
 import io.github.lumkit.tweak.common.util.startService
+import io.github.lumkit.tweak.data.LoadState
+import io.github.lumkit.tweak.data.watch
 import io.github.lumkit.tweak.services.KeepAliveService
 import io.github.lumkit.tweak.ui.component.BottomAlignmentOffsetPositionProvider
 import io.github.lumkit.tweak.ui.component.PlainTooltipBox
@@ -56,6 +68,7 @@ import io.github.lumkit.tweak.ui.screen.ScreenRoute
 import io.github.lumkit.tweak.ui.screen.main.page.FunctionPage
 import io.github.lumkit.tweak.ui.screen.main.page.MinePage
 import io.github.lumkit.tweak.ui.screen.main.page.OverviewPage
+import io.github.lumkit.tweak.ui.screen.settings.SettingsViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -112,11 +125,13 @@ fun MainScreen() {
         }
     }
 
+    MainInit()
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         topBar = {
-            ToolBar(coroutineScope, pagerState, navItems)
+            ToolBar(coroutineScope, pagerState, navItems, context)
         }
     ) {
         HorizontalPager(
@@ -137,14 +152,19 @@ fun MainScreen() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ToolBar(coroutineScope: CoroutineScope, pagerState: PagerState, navItems: List<NavItem>) {
+private fun ToolBar(
+    coroutineScope: CoroutineScope,
+    pagerState: PagerState,
+    navItems: List<NavItem>,
+    context: Context
+) {
     TopAppBar(
         modifier = Modifier.fillMaxWidth(),
         title = {
             NavBar(coroutineScope = coroutineScope, pagerState = pagerState, navItems = navItems)
         },
         actions = {
-            TopActions()
+            TopActions(context)
         }
     )
 }
@@ -240,8 +260,25 @@ private fun NavBar(
 }
 
 @Composable
-private fun TopActions() {
+private fun TopActions(context: Context) {
     val navHostController = LocalScreenNavigationController.current
+    val settingsViewModel = viewModel { SettingsViewModel() }
+    val settingsLoadState = settingsViewModel.loadState.collectAsStateWithLifecycle()
+
+    var badgeCount by rememberSaveable { mutableIntStateOf(0) }
+    var settingsClickable by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        if (!settingsClickable) {
+            settingsViewModel.checkVersion(context.getVersionCode())
+        }
+        settingsLoadState.watch("checkVersion") {
+            if (it is LoadState.Success) {
+                badgeCount += 1
+                settingsViewModel.clearLoadState("checkVersion")
+            }
+        }
+    }
 
     CompositionLocalProvider(
         LocalContentColor provides MaterialTheme.colorScheme.outline
@@ -250,22 +287,38 @@ private fun TopActions() {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            IconButton(
-                onClick = {
-                    navHostController.navigate(ScreenRoute.SETTINGS) {
-                        popUpTo(navHostController.currentBackStackEntry?.destination?.route ?: ScreenRoute.MAIN) {
-                            saveState = true
+            BadgedBox(
+                badge = {
+                    AnimatedContent(
+                        targetState = badgeCount > 0
+                    ) {
+                        if (it) {
+                            Badge {
+                                Text(text = "$badgeCount")
+                            }
                         }
-                        launchSingleTop = true
-                        restoreState = true
                     }
                 }
             ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_settings),
-                    contentDescription = null,
-                    modifier = Modifier.size(28.dp)
-                )
+                IconButton(
+                    onClick = {
+                        navHostController.navigate(ScreenRoute.SETTINGS) {
+                            popUpTo(navHostController.currentBackStackEntry?.destination?.route ?: ScreenRoute.MAIN) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                        badgeCount = 0
+                        settingsClickable = true
+                    }
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_settings),
+                        contentDescription = null,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
             }
         }
     }

@@ -98,7 +98,7 @@ class UpdateEngineClient {
                         }
 
                         // onStatusUpdate回调
-                        96 -> {
+                        95, 96 -> {
                             val statusUpdate = info.onStatusUpdate()
                             _updateEngineClientState.value = statusUpdate
                             TweakApplication.application.progress(

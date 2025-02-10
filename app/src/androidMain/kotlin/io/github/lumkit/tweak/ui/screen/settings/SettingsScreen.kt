@@ -21,13 +21,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -64,20 +67,24 @@ import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import io.github.lumkit.tweak.LocalScreenNavigationController
 import io.github.lumkit.tweak.R
 import io.github.lumkit.tweak.common.shell.provide.ReusableShells
+import io.github.lumkit.tweak.common.util.format
 import io.github.lumkit.tweak.common.util.getVersionCode
 import io.github.lumkit.tweak.common.util.getVersionName
 import io.github.lumkit.tweak.common.util.startBrowser
 import io.github.lumkit.tweak.data.DarkModeState
 import io.github.lumkit.tweak.data.asStringId
+import io.github.lumkit.tweak.data.watch
 import io.github.lumkit.tweak.model.Config
 import io.github.lumkit.tweak.model.Const
 import io.github.lumkit.tweak.ui.component.DetailItem
@@ -872,10 +879,55 @@ private fun RefreshTickDialog(
 private fun About(
     context: Context,
     navHostController: NavHostController,
-    viewModel: SettingsViewModel
+    viewModel: SettingsViewModel,
 ) {
     val versionName = remember { context.getVersionName() }
     val versionCode = remember { context.getVersionCode() }
+
+    val loadState = viewModel.loadState.collectAsStateWithLifecycle()
+    var checkVersionLoading by rememberSaveable { mutableStateOf(false) }
+    val checkVersionDialogState = rememberSaveable { mutableStateOf(false) }
+    var hasUpdate by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(loadState) {
+        viewModel.checkVersion(context.getVersionCode())
+        loadState.watch("checkVersion") {
+            when (it) {
+                is io.github.lumkit.tweak.data.LoadState.Fail -> {
+                    viewModel.clearLoadState("checkVersion")
+                    withContext(Dispatchers.Main) {
+                        if (checkVersionLoading) {
+                            Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    hasUpdate = false
+                    checkVersionDialogState.value = false
+                    checkVersionLoading = false
+                }
+                is io.github.lumkit.tweak.data.LoadState.Loading -> Unit
+                is io.github.lumkit.tweak.data.LoadState.Success -> {
+                    viewModel.clearLoadState("checkVersion")
+                    hasUpdate = true
+                    withContext(Dispatchers.Main) {
+                        if (checkVersionLoading) {
+                            Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    if (checkVersionLoading) {
+                        checkVersionDialogState.value = true
+                    }
+                    checkVersionLoading = false
+                }
+                null -> Unit
+            }
+        }
+    }
+
+    if (checkVersionLoading) {
+        LoadingDialog()
+    }
+
+    UpdateDialog(checkVersionDialogState, viewModel, context)
 
     GroupDetail(
         title = {
@@ -885,6 +937,8 @@ private fun About(
         DetailItem(
             modifier = Modifier.fillMaxWidth(),
             onClick = {
+                checkVersionLoading = true
+                checkVersionDialogState.value = false
                 viewModel.checkVersion(context.getVersionCode())
             },
             title = {
@@ -901,6 +955,13 @@ private fun About(
                 )
             },
             actions = {
+                AnimatedVisibility(
+                    visible = hasUpdate
+                ) {
+                    Badge {
+                        Text(text = stringResource(R.string.text_has_update))
+                    }
+                }
                 Icon(
                     painter = painterResource(R.drawable.ic_right),
                     contentDescription = null,
@@ -1011,6 +1072,39 @@ private fun About(
         DetailItem(
             modifier = Modifier.fillMaxWidth(),
             onClick = {
+                context.startBrowser("https://github.com/lumkit/Tweak-Android")
+            },
+            title = {
+                Text(
+                    text = stringResource(R.string.text_open_sources_url)
+                )
+            },
+            subTitle = {
+                Text(
+                    text = buildAnnotatedString {
+                        withStyle(
+                            style = SpanStyle(
+                                color = MaterialTheme.colorScheme.primary,
+                                textDecoration = TextDecoration.Underline
+                            )
+                        ) {
+                            append("https://github.com/lumkit/Tweak-Android")
+                        }
+                    }
+                )
+            },
+            actions = {
+                Icon(
+                    painter = painterResource(R.drawable.ic_right),
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        )
+
+        DetailItem(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = {
                 navHostController.navigate(ScreenRoute.OPEN_SOURCE)
             },
             title = {
@@ -1024,6 +1118,95 @@ private fun About(
                     contentDescription = null,
                     modifier = Modifier.size(16.dp)
                 )
+            }
+        )
+    }
+}
+
+@Composable
+private fun UpdateDialog(
+    hasUpdate: MutableState<Boolean>,
+    viewModel: SettingsViewModel,
+    context: Context
+) {
+    val clientVersionBeanState by viewModel.clientVersionState.collectAsStateWithLifecycle()
+
+    if (hasUpdate.value) {
+        AlertDialog(
+            onDismissRequest = {
+                hasUpdate.value = false
+            },
+            title = {
+                Text(
+                    text = stringResource(R.string.text_has_update)
+                )
+            },
+            text = {
+                SelectionContainer {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        Text(
+                            text = buildAnnotatedString {
+                                append(stringResource(R.string.text_app_version))
+                                append(": ${clientVersionBeanState?.versionName} (${clientVersionBeanState?.versionCode})\n")
+                                append(stringResource(R.string.text_release_date))
+                                append(": ${clientVersionBeanState?.createTime?.format()}\n")
+                                append(stringResource(R.string.text_download_url))
+                                append(": ")
+                                withLink(
+                                    link = LinkAnnotation.Clickable(
+                                        tag = ""
+                                    ) {
+                                        context.startBrowser(clientVersionBeanState?.downloadUrl)
+                                    }
+                                ) {
+                                    withStyle(
+                                        style = SpanStyle(
+                                            color = MaterialTheme.colorScheme.primary,
+                                            textDecoration = TextDecoration.Underline
+                                        )
+                                    ) {
+                                        append(clientVersionBeanState?.downloadUrl)
+                                    }
+                                }
+                            },
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text(
+                            text = clientVersionBeanState?.description ?: stringResource(R.string.text_version_info_is_blank)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        hasUpdate.value = false
+                        context.startBrowser(clientVersionBeanState?.downloadUrl)
+                    }
+                ) {
+                    Text(
+                        text = stringResource(R.string.text_download_new_version)
+                    )
+                }
+            },
+            dismissButton = {
+                FilledTonalButton(
+                    onClick = {
+                        hasUpdate.value = false
+                    }
+                ) {
+                    Text(
+                        text = "取消"
+                    )
+                }
             }
         )
     }

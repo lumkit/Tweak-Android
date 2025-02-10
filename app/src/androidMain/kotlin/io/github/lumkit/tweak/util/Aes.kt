@@ -1,9 +1,11 @@
 package io.github.lumkit.tweak.util
 
+import android.content.Context
+
 object Aes {
     init {
-        System.loadLibrary("liblibtweak")
+        System.loadLibrary("libtweak")
     }
-    external fun encrypt(plainText: String): String?
-    external fun decrypt(cipherText: String): String?
+    external fun encrypt(context: Context, plainText: String): String?
+    external fun decrypt(context: Context, cipherText: String): String?
 }

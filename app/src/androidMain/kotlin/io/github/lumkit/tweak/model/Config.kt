@@ -6,7 +6,8 @@ import androidx.core.content.edit
 
 object Config {
 
-    const val DEBUG = false
+    val DEBUG: Boolean
+        get() = false
 
     object Path {
         val binDir: File
@@ -28,6 +29,15 @@ object Config {
                 return dir
             }
         val cacheDir: File = File("/data/ota_package")
+
+        val appCacheDir: File
+            get() {
+                val dir = File(TweakApplication.application.filesDir, "cache")
+                if (!dir.exists()) {
+                    dir.mkdirs()
+                }
+                return dir
+            }
     }
 
     val ROOT_USERS = listOf(
