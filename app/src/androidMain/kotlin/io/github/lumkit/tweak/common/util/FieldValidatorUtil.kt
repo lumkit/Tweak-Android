@@ -1,4 +1,4 @@
-package io.github.lumkit.tweak.util
+package io.github.lumkit.tweak.common.util
 
 import java.util.regex.Pattern
 

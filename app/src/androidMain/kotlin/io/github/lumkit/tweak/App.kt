@@ -1,5 +1,9 @@
 package io.github.lumkit.tweak
 
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -38,6 +42,12 @@ fun App() {
     }
 }
 
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+val LocalSharedTransitionScope = staticCompositionLocalOf<SharedTransitionScope> { error("SharedTransitionScope is not provided.") }
+val LocalAnimateContentScope = staticCompositionLocalOf<AnimatedContentScope> { error("AnimatedContentScope is not provided.") }
+
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun Routing() {
     val context = LocalContext.current
@@ -46,57 +56,83 @@ private fun Routing() {
     val functionPageViewModel = viewModel { FunctionPageViewModel(context) }
     val platesState by functionPageViewModel.plateState.collectAsStateWithLifecycle()
 
-    NavHost(
-        navController = navHostController,
-        startDestination = ScreenRoute.RUNTIME_MODE,
-        enterTransition = {
-            slideInHorizontally { it } + fadeIn()
-        },
-        exitTransition = {
-            scaleOut(targetScale = .9f) + fadeOut()
-        },
-        popEnterTransition = {
-            scaleIn(initialScale = .9f) + fadeIn()
-        },
-        popExitTransition = {
-            slideOutHorizontally { it } + fadeOut()
-        }
-    ) {
-        composable(route = ScreenRoute.PROTOCOL) {
-            ProtocolScreen()
-        }
-
-        composable(route = ScreenRoute.RUNTIME_MODE) {
-            RuntimeModeScreen()
-        }
-
-        composable(
-            route = ScreenRoute.MAIN,
+    SharedTransitionLayout {
+        CompositionLocalProvider(
+            LocalSharedTransitionScope provides this
         ) {
-            MainScreen()
-        }
-
-        composable(
-            route = ScreenRoute.SETTINGS,
-        ) {
-            SettingsScreen()
-        }
-
-        platesState.forEach { modules ->
-            modules.modules.forEach { module ->
+            NavHost(
+                navController = navHostController,
+                startDestination = ScreenRoute.RUNTIME_MODE,
+                enterTransition = {
+                    slideInHorizontally { it } + fadeIn()
+                },
+                exitTransition = {
+                    scaleOut(targetScale = .9f) + fadeOut()
+                },
+                popEnterTransition = {
+                    scaleIn(initialScale = .9f) + fadeIn()
+                },
+                popExitTransition = {
+                    slideOutHorizontally { it } + fadeOut()
+                }
+            ) {
                 composable(
-                    route = module.route,
-                    deepLinks = module.deepLinks
+                    route = ScreenRoute.PROTOCOL,
                 ) {
-                    module.screen()
+                    ProtocolScreen()
+                }
+
+                composable(
+                    route = ScreenRoute.RUNTIME_MODE
+                ) {
+                    RuntimeModeScreen()
+                }
+
+                composable(
+                    route = ScreenRoute.MAIN,
+                ) {
+                    CompositionLocalProvider(
+                        LocalAnimateContentScope provides this
+                    ) {
+                        MainScreen()
+                    }
+                }
+
+                composable(
+                    route = ScreenRoute.SETTINGS,
+                ) {
+                    CompositionLocalProvider(
+                        LocalAnimateContentScope provides this
+                    ) {
+                        SettingsScreen()
+                    }
+                }
+
+                platesState.forEach { modules ->
+                    modules.modules.forEach { module ->
+                        composable(
+                            route = module.route,
+                            deepLinks = module.deepLinks
+                        ) {
+                            CompositionLocalProvider(
+                                LocalAnimateContentScope provides this
+                            ) {
+                                module.screen()
+                            }
+                        }
+                    }
+                }
+
+                composable(
+                    route = ScreenRoute.OPEN_SOURCE
+                ) {
+                    CompositionLocalProvider(
+                        LocalAnimateContentScope provides this
+                    ) {
+                        OpenSourceScreen()
+                    }
                 }
             }
-        }
-
-        composable(
-            route = ScreenRoute.OPEN_SOURCE
-        ) {
-            OpenSourceScreen()
         }
     }
 }

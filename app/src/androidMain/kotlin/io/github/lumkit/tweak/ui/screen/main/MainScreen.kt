@@ -3,6 +3,8 @@ package io.github.lumkit.tweak.ui.screen.main
 import android.content.Context
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -54,7 +56,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.lumkit.tweak.LocalAnimateContentScope
 import io.github.lumkit.tweak.LocalScreenNavigationController
+import io.github.lumkit.tweak.LocalSharedTransitionScope
 import io.github.lumkit.tweak.R
 import io.github.lumkit.tweak.common.util.ServiceUtils
 import io.github.lumkit.tweak.common.util.getVersionCode
@@ -259,6 +263,7 @@ private fun NavBar(
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun TopActions(context: Context) {
     val navHostController = LocalScreenNavigationController.current
@@ -267,6 +272,9 @@ private fun TopActions(context: Context) {
 
     var badgeCount by rememberSaveable { mutableIntStateOf(0) }
     var settingsClickable by rememberSaveable { mutableStateOf(false) }
+
+    val animatedContentScope = LocalAnimateContentScope.current
+    val sharedTransitionScope = LocalSharedTransitionScope.current
 
     LaunchedEffect(Unit) {
         if (!settingsClickable) {
@@ -280,44 +288,51 @@ private fun TopActions(context: Context) {
         }
     }
 
-    CompositionLocalProvider(
-        LocalContentColor provides MaterialTheme.colorScheme.outline
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+    sharedTransitionScope.run {
+        CompositionLocalProvider(
+            LocalContentColor provides MaterialTheme.colorScheme.outline
         ) {
-            BadgedBox(
-                badge = {
-                    AnimatedContent(
-                        targetState = badgeCount > 0
-                    ) {
-                        if (it) {
-                            Badge {
-                                Text(text = "$badgeCount")
-                            }
-                        }
-                    }
-                }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                IconButton(
-                    onClick = {
-                        navHostController.navigate(ScreenRoute.SETTINGS) {
-                            popUpTo(navHostController.currentBackStackEntry?.destination?.route ?: ScreenRoute.MAIN) {
-                                saveState = true
+                BadgedBox(
+                    badge = {
+                        AnimatedContent(
+                            targetState = badgeCount > 0
+                        ) {
+                            if (it) {
+                                Badge {
+                                    Text(text = "$badgeCount")
+                                }
                             }
-                            launchSingleTop = true
-                            restoreState = true
                         }
-                        badgeCount = 0
-                        settingsClickable = true
                     }
                 ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_settings),
-                        contentDescription = null,
-                        modifier = Modifier.size(28.dp)
-                    )
+                    IconButton(
+                        onClick = {
+                            navHostController.navigate(ScreenRoute.SETTINGS) {
+                                popUpTo(navHostController.currentBackStackEntry?.destination?.route ?: ScreenRoute.MAIN) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                            badgeCount = 0
+                            settingsClickable = true
+                        },
+                        modifier = Modifier.sharedBounds(
+                            sharedContentState = rememberSharedContentState(ScreenRoute.SETTINGS),
+                            animatedVisibilityScope = animatedContentScope,
+                            resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
+                        )
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_settings),
+                            contentDescription = null,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                 }
             }
         }

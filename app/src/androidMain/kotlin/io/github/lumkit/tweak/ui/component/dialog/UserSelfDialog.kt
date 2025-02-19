@@ -51,7 +51,6 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -77,7 +76,7 @@ import io.github.lumkit.tweak.net.pojo.resp.GetCaptchaParam
 import io.github.lumkit.tweak.net.pojo.resp.UpdatePassword
 import io.github.lumkit.tweak.ui.component.FolderItem
 import io.github.lumkit.tweak.ui.screen.main.page.UserViewModel
-import io.github.lumkit.tweak.util.FieldValidatorUtil
+import io.github.lumkit.tweak.common.util.FieldValidatorUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext

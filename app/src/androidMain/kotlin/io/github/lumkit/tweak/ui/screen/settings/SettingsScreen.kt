@@ -10,7 +10,10 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -75,14 +78,19 @@ import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import io.github.lumkit.tweak.LocalAnimateContentScope
 import io.github.lumkit.tweak.LocalScreenNavigationController
+import io.github.lumkit.tweak.LocalSharedTransitionScope
 import io.github.lumkit.tweak.R
+import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.common.shell.provide.ReusableShells
 import io.github.lumkit.tweak.common.util.format
 import io.github.lumkit.tweak.common.util.getVersionCode
 import io.github.lumkit.tweak.common.util.getVersionName
+import io.github.lumkit.tweak.common.util.restartApp
 import io.github.lumkit.tweak.common.util.startBrowser
 import io.github.lumkit.tweak.data.DarkModeState
+import io.github.lumkit.tweak.data.RuntimeStatus
 import io.github.lumkit.tweak.data.asStringId
 import io.github.lumkit.tweak.data.watch
 import io.github.lumkit.tweak.model.Config
@@ -94,6 +102,7 @@ import io.github.lumkit.tweak.ui.component.LoadingDialog
 import io.github.lumkit.tweak.ui.component.MaterialSlider
 import io.github.lumkit.tweak.ui.component.PlainTooltipBox
 import io.github.lumkit.tweak.ui.component.ScreenScaffold
+import io.github.lumkit.tweak.ui.component.SharedTransitionText
 import io.github.lumkit.tweak.ui.local.CustomColorScheme
 import io.github.lumkit.tweak.ui.local.LocalStorageStore
 import io.github.lumkit.tweak.ui.local.LocalThemeStore
@@ -119,6 +128,7 @@ import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.isAccessible
 import kotlin.reflect.jvm.javaField
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel { SettingsViewModel() }
@@ -127,10 +137,13 @@ fun SettingsScreen(
     val storageStore = LocalStorageStore.current
     val navHostController = LocalScreenNavigationController.current
 
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+    val animatedContentScope = LocalAnimateContentScope.current
+
     ScreenScaffold(
         title = {
-            Text(
-                text = stringResource(R.string.text_settings_screen)
+            SharedTransitionText(
+                text = stringResource(R.string.text_settings_screen),
             )
         },
     ) {
@@ -144,7 +157,13 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.size(8.dp))
             SchemeModules(context)
             AppModules(context, storageStore)
-            About(context, navHostController, viewModel)
+            About(
+                context,
+                navHostController,
+                viewModel,
+                sharedTransitionScope,
+                animatedContentScope
+            )
             Spacer(modifier = Modifier.size(16.dp))
         }
     }
@@ -322,7 +341,8 @@ private fun ColumnScope.CustomColorSchemeItem(themeStore: ThemeStore, context: C
                                 append("${stringResource(R.string.text_now_color)}: ")
                                 withStyle(
                                     style = SpanStyle(
-                                        color = themeStore.customColorScheme.material3?.seed?.toColor() ?: MaterialTheme.colorScheme.primary,
+                                        color = themeStore.customColorScheme.material3?.seed?.toColor()
+                                            ?: MaterialTheme.colorScheme.primary,
                                         textDecoration = TextDecoration.Underline
                                     )
                                 ) {
@@ -405,19 +425,26 @@ private fun UpdateColorSchemeDialog(
                                 themeStore.customColorScheme.material3 = copy
                                 copy?.apply {
                                     // 安装到私有目录
-                                    CustomColorScheme.CUSTOM_MATERIAL3_JSON_INSTALL_File.outputStream().use { os ->
-                                        os.buffered().use { bos ->
-                                            bos.write(json.encodeToString(this).toByteArray())
+                                    CustomColorScheme.CUSTOM_MATERIAL3_JSON_INSTALL_File.outputStream()
+                                        .use { os ->
+                                            os.buffered().use { bos ->
+                                                bos.write(json.encodeToString(this).toByteArray())
+                                            }
                                         }
-                                    }
-                                    themeStore.customColorScheme.lightColorScheme = schemes.light.toColorScheme()
-                                    themeStore.customColorScheme.darkColorScheme = schemes.dark.toColorScheme()
+                                    themeStore.customColorScheme.lightColorScheme =
+                                        schemes.light.toColorScheme()
+                                    themeStore.customColorScheme.darkColorScheme =
+                                        schemes.dark.toColorScheme()
                                 }
                                 withContext(Dispatchers.Main) {
-                                    Toast.makeText(context, R.string.text_success_update_color_scheme, Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(
+                                        context,
+                                        R.string.text_success_update_color_scheme,
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
                                 updateColorSchemeDialogState.value = false
-                            }catch (e: Exception) {
+                            } catch (e: Exception) {
                                 withContext(Dispatchers.IO) {
                                     Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
                                 }
@@ -497,7 +524,7 @@ private fun ColumnScope.SchemesBox(
                 .firstOrNull { it.name == name }
                 ?.getter
                 ?.call(bean)
-                ?.let {  it as Scheme }
+                ?.let { it as Scheme }
         }
 
         schemeBean = scheme
@@ -541,9 +568,13 @@ private fun ColumnScope.SchemesBox(
                     icon = {
                         Surface(
                             modifier = Modifier.fillMaxSize(),
-                            color = it.getter.call(schemeBean)?.let { it as String }?.toColor() ?: Color.Transparent,
+                            color = it.getter.call(schemeBean)?.let { it as String }?.toColor()
+                                ?: Color.Transparent,
                             shape = RoundedCornerShape(8.dp),
-                            border = BorderStroke(width = 1.dp, color = MaterialTheme.colorScheme.outline)
+                            border = BorderStroke(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.outline
+                            )
                         ) {}
                     },
                     trailingIcon = {
@@ -587,10 +618,11 @@ private fun ColorPickerDialog(
     val context = LocalContext.current
     var textColor by remember(key1 = kProperty1) { mutableStateOf(Color.Transparent.toHex()) }
     var loading by rememberSaveable { mutableStateOf(false) }
-    val ioScope = rememberCoroutineScope{ Dispatchers.IO }
+    val ioScope = rememberCoroutineScope { Dispatchers.IO }
 
     LaunchedEffect(kProperty1) {
-        textColor = kProperty1.getter.call(schemeBean)?.let { it as String } ?: Color.Transparent.toHex()
+        textColor =
+            kProperty1.getter.call(schemeBean)?.let { it as String } ?: Color.Transparent.toHex()
     }
 
     AlertDialog(
@@ -646,8 +678,12 @@ private fun ColorPickerDialog(
                             onClick = {
                                 try {
                                     textColor = text.toColor().toHex()
-                                }catch (e: Exception) {
-                                    Toast.makeText(context, R.string.text_color_converte_failed, Toast.LENGTH_SHORT).show()
+                                } catch (e: Exception) {
+                                    Toast.makeText(
+                                        context,
+                                        R.string.text_color_converte_failed,
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
                             }
                         ) {
@@ -664,11 +700,12 @@ private fun ColorPickerDialog(
                     ioScope.launch {
                         try {
                             kProperty1.isAccessible = true
-                            val javaField = kProperty1.javaField ?: throw RuntimeException("属性异常")
+                            val javaField =
+                                kProperty1.javaField ?: throw RuntimeException("属性异常")
                             javaField.set(schemeBean, textColor)
                             onUpdate(schemeBean?.copy() ?: throw RuntimeException("属性异常"))
                             onDismissRequest()
-                        }catch (e: Exception) {
+                        } catch (e: Exception) {
                             e.printStackTrace()
                             withContext(Dispatchers.Main) {
                                 Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
@@ -746,54 +783,165 @@ private fun AppModules(context: Context, storageStore: StorageStore) {
                 )
             }
         )
-        DetailItem(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = {
-                userExpanded = true
-            },
-            title = {
-                Text(
-                    text = stringResource(R.string.text_change_root_user)
-                )
-            },
-            subTitle = {
-                Text(
-                    text = String.format("%s: %s", stringResource(R.string.text_change_root_user_tip), user)
-                )
-            },
-            actions = {
-                Column {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_right),
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    DropdownMenu(
-                        expanded = userExpanded,
-                        onDismissRequest = { userExpanded = false }
-                    ) {
-                        Config.ROOT_USERS.forEach {
-                            DropdownMenuItem(
-                                text = {
-                                    Text(text = it)
-                                },
-                                onClick = {
-                                    user = it
-                                    ReusableShells.changeUserIdAtAll(it)
-                                    userExpanded = false
-                                },
-                                leadingIcon = {
-                                    Checkbox(
-                                        checked = it == user,
-                                        onCheckedChange = null
+
+        run {
+            var askChangeDialog by rememberSaveable { mutableStateOf(false) }
+            var expanded by rememberSaveable { mutableStateOf(false) }
+            var tempStatus by rememberSaveable { mutableStateOf(TweakApplication.runtimeStatus) }
+
+            if (askChangeDialog) {
+                AlertDialog(
+                    onDismissRequest = {
+                        askChangeDialog = false
+                    },
+                    title = {
+                        Text(text = stringResource(R.string.text_alert))
+                    },
+                    text = {
+                        Text(
+                            text = buildString {
+                                append(
+                                    String.format(
+                                        stringResource(R.string.text_change_runtime_status_message),
+                                        tempStatus.name
                                     )
-                                }
+                                )
+                            }
+                        )
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                TweakApplication.setRuntimeStatusState(tempStatus)
+                                context.restartApp()
+                            }
+                        ) {
+                            Text(
+                                text = stringResource(R.string.text_change_runtime_status_and_restart)
                             )
+                        }
+                    },
+                    dismissButton = {
+                        FilledTonalButton(
+                            onClick = {
+                                askChangeDialog = false
+                            }
+                        ) {
+                            Text(text = stringResource(R.string.text_cancel))
+                        }
+                    }
+                )
+            }
+
+            DetailItem(
+                modifier = Modifier.fillMaxWidth(),
+                title = {
+                    Text(
+                        text = stringResource(R.string.text_change_runtime_status)
+                    )
+                },
+                subTitle = {
+                    Text(
+                        text = buildString {
+                            append(stringResource(R.string.text_now_status))
+                            append(": ")
+                            append(TweakApplication.runtimeStatus.name)
+                        }
+                    )
+                },
+                actions = {
+                    Column {
+                        TextButton(
+                            onClick = {
+                                expanded = true
+                            }
+                        ) {
+                            Text(
+                                text = stringResource(R.string.text_change)
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = {
+                                expanded = false
+                            }
+                        ) {
+                            RuntimeStatus.entries.filter {
+                                it != RuntimeStatus.Normal && it != TweakApplication.runtimeStatus
+                            }.forEach {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = it.name
+                                        )
+                                    },
+                                    onClick = {
+                                        askChangeDialog = true
+                                        tempStatus = it
+                                        expanded = false
+                                    }
+                                )
+                            }
                         }
                     }
                 }
-            }
-        )
+            )
+        }
+
+        if (TweakApplication.runtimeStatus == RuntimeStatus.Root) {
+            DetailItem(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    userExpanded = true
+                },
+                title = {
+                    Text(
+                        text = stringResource(R.string.text_change_root_user)
+                    )
+                },
+                subTitle = {
+                    Text(
+                        text = String.format(
+                            "%s: %s",
+                            stringResource(R.string.text_change_root_user_tip),
+                            user
+                        )
+                    )
+                },
+                actions = {
+                    Column {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_right),
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        DropdownMenu(
+                            expanded = userExpanded,
+                            onDismissRequest = { userExpanded = false }
+                        ) {
+                            Config.ROOT_USERS.forEach {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(text = it)
+                                    },
+                                    onClick = {
+                                        user = it
+                                        ReusableShells.changeUserIdAtAll(it)
+                                        userExpanded = false
+                                    },
+                                    leadingIcon = {
+                                        Checkbox(
+                                            checked = it == user,
+                                            onCheckedChange = null
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            )
+        }
 
         DetailItem(
             modifier = Modifier.fillMaxWidth(),
@@ -804,7 +952,13 @@ private fun AppModules(context: Context, storageStore: StorageStore) {
                 Text(text = stringResource(R.string.text_refresh_tick))
             },
             subTitle = {
-                Text(text = String.format("%s: %dms", stringResource(R.string.text_now), tick.longValue))
+                Text(
+                    text = String.format(
+                        "%s: %dms",
+                        stringResource(R.string.text_now),
+                        tick.longValue
+                    )
+                )
             },
             actions = {
                 Icon(
@@ -851,7 +1005,7 @@ private fun RefreshTickDialog(
                     onValueChange = {
                         tick.value = it.toLong()
                     },
-                    valueRange = 500f .. 5000f
+                    valueRange = 500f..5000f
                 )
             }
         },
@@ -875,11 +1029,14 @@ private fun RefreshTickDialog(
     )
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun About(
     context: Context,
     navHostController: NavHostController,
     viewModel: SettingsViewModel,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedContentScope: AnimatedContentScope,
 ) {
     val versionName = remember { context.getVersionName() }
     val versionCode = remember { context.getVersionCode() }
@@ -904,6 +1061,7 @@ private fun About(
                     checkVersionDialogState.value = false
                     checkVersionLoading = false
                 }
+
                 is io.github.lumkit.tweak.data.LoadState.Loading -> Unit
                 is io.github.lumkit.tweak.data.LoadState.Success -> {
                     viewModel.clearLoadState("checkVersion")
@@ -918,6 +1076,7 @@ private fun About(
                     }
                     checkVersionLoading = false
                 }
+
                 null -> Unit
             }
         }
@@ -1102,24 +1261,34 @@ private fun About(
             }
         )
 
-        DetailItem(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = {
-                navHostController.navigate(ScreenRoute.OPEN_SOURCE)
-            },
-            title = {
-                Text(
-                    text = stringResource(R.string.text_open_sources)
-                )
-            },
-            actions = {
-                Icon(
-                    painter = painterResource(R.drawable.ic_right),
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-        )
+        sharedTransitionScope.run {
+            DetailItem(
+                modifier = Modifier.fillMaxWidth().sharedBounds(
+                    sharedContentState = rememberSharedContentState("${ScreenRoute.OPEN_SOURCE}-box"),
+                    animatedVisibilityScope = animatedContentScope,
+                ),
+                onClick = {
+                    navHostController.navigate(ScreenRoute.OPEN_SOURCE)
+                },
+                title = {
+
+                    Text(
+                        text = stringResource(R.string.text_open_sources),
+                        modifier = Modifier.sharedBounds(
+                            sharedContentState = rememberSharedContentState("${ScreenRoute.OPEN_SOURCE}-title"),
+                            animatedVisibilityScope = animatedContentScope
+                        )
+                    )
+                },
+                actions = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_right),
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            )
+        }
     }
 }
 
@@ -1180,7 +1349,8 @@ private fun UpdateDialog(
                         Spacer(modifier = Modifier.height(12.dp))
 
                         Text(
-                            text = clientVersionBeanState?.description ?: stringResource(R.string.text_version_info_is_blank)
+                            text = clientVersionBeanState?.description
+                                ?: stringResource(R.string.text_version_info_is_blank)
                         )
                     }
                 }

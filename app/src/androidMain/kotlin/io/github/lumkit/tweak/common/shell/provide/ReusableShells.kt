@@ -4,13 +4,19 @@ import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.model.Const
 import java.util.concurrent.ConcurrentHashMap
 import androidx.core.content.edit
+import io.github.lumkit.tweak.data.RuntimeStatus
 
 object ReusableShells {
     private val shells = ConcurrentHashMap<String, ReusableShell>()
 
     @Synchronized
-    fun getInstance(key: String, user: String = rootUser, redirectErrorStream: Boolean = false): ReusableShell {
-        val shell = ReusableShell(user, redirectErrorStream)
+    fun getInstance(
+        key: String,
+        user: String = rootUser,
+        redirectErrorStream: Boolean = false,
+        status: RuntimeStatus
+    ): ReusableShell {
+        val shell = ReusableShell(user, redirectErrorStream, status)
         if (!shells.containsKey(key)) {
             shells[key] = shell
         }
@@ -40,14 +46,19 @@ object ReusableShells {
     }
 
     private val rootUser: String
-        get() = TweakApplication.shared.getString(Const.APP_SHELL_ROOT_USER, null) ?: "su"
+        get() = when (TweakApplication.runtimeStatus) {
+            RuntimeStatus.Normal -> "sh"
+            RuntimeStatus.Shizuku -> "sh"
+            RuntimeStatus.Root -> TweakApplication.shared.getString(Const.APP_SHELL_ROOT_USER, null)
+                ?: "su"
+        }
 
     private val defaultReusableShell: ReusableShell
         get() {
             val key = "defaultReusableShell"
             val default = shells[key]
             return if (default == null) {
-                val shell = ReusableShell(rootUser)
+                val shell = ReusableShell(rootUser, status = TweakApplication.runtimeStatus)
                 shells[key] = shell
                 shell
             } else {
@@ -59,7 +70,7 @@ object ReusableShells {
             val key = "secondaryReusableShell"
             val default = shells[key]
             return if (default == null) {
-                val shell = ReusableShell(rootUser)
+                val shell = ReusableShell(rootUser, status = TweakApplication.runtimeStatus)
                 shells[key] = shell
                 shell
             } else {
@@ -86,10 +97,12 @@ object ReusableShells {
     /**
      * 同步执行命令行
      */
-    suspend fun execSync(vararg cmd: String): String = defaultReusableShell.commitCmdSync(cmd.joinToString("\n"))
+    suspend fun execSync(vararg cmd: String): String =
+        defaultReusableShell.commitCmdSync(cmd.joinToString("\n"))
 
     /**
      * 同步执行命令行
      */
-    suspend fun execSync(cmd: List<String>): String = defaultReusableShell.commitCmdSync(cmd.joinToString("\n"))
+    suspend fun execSync(cmd: List<String>): String =
+        defaultReusableShell.commitCmdSync(cmd.joinToString("\n"))
 }

@@ -5,7 +5,7 @@
     <string name="text_runtime_mode_root_mode">ROOT模式</string>
     <string name="text_runtime_mode_root_mode_tips">可以使用所有【查看/修改】功能</string>
     <string name="text_use_protocol">使用协议</string>
-    <string name="text_use_protocol_content">在ROOT模式下，Tweak提供的所有功能都可以被访问，其中也包括一些具有一定危险性的功能。\n例如：删除出厂自带应用、控制处理器性能、写入或还原系统文件。\n\n使用过程中可能会因为操作不当或功能缺陷，导致你无法进入系统界面，或丢失重要数据。如果你从未听说过刷机、变砖、恢复出厂设置，并且没有备用设备，该模式可能并不适用于你！\n\n如果你愿意接受这些风险，使用时请务必小心谨慎，认真阅读各个功能的提示警示信息，不要轻易触动不理解的功能和按钮开关！\n务必不要在你用于【工作】或存有【重要数据】的手机上使用ROOT模式，以免造成无法挽回的损失！\n\n*Tweak可能会偶尔收集设备型号、设备厂家、设备ID信息、硬件配置参数、性能统计、温控配置等数据，用于改进适配情况。</string>
+    <string name="text_use_protocol_content_for_root">在ROOT模式下，Tweak提供的所有功能都可以被访问，其中也包括一些具有一定危险性的功能。\n例如：删除出厂自带应用、控制处理器性能、写入或还原系统文件。\n\n使用过程中可能会因为操作不当或功能缺陷，导致你无法进入系统界面，或丢失重要数据。如果你从未听说过刷机、变砖、恢复出厂设置，并且没有备用设备，该模式可能并不适用于你！\n\n如果你愿意接受这些风险，使用时请务必小心谨慎，认真阅读各个功能的提示警示信息，不要轻易触动不理解的功能和按钮开关！\n务必不要在你用于【工作】或存有【重要数据】的手机上使用ROOT模式，以免造成无法挽回的损失！\n\n*Tweak可能会偶尔收集设备型号、设备厂家、设备ID信息、硬件配置参数、性能统计、温控配置等数据，用于改进适配情况。</string>
     <string name="text_accept_risk">接受风险</string>
     <string name="text_accept_risk_tips">我已了解并同意承担风险</string>
     <string name="text_cancel">取消</string>

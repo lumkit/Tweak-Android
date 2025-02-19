@@ -1,5 +1,9 @@
 package io.github.lumkit.tweak.common.shell.provide
 
+import rikka.shizuku.Shizuku
+import rikka.shizuku.ShizukuRemoteProcess
+
+
 object RuntimeProvider {
     private var workPath: String = ""
     private var defaultWorkPath: String = ""
@@ -57,6 +61,34 @@ object RuntimeProvider {
             outputStream.write("\n".toByteArray())
             outputStream.flush()
         }
+        return process
+    }
+
+    fun getAdbProcess(): Process {
+        val method = Shizuku::class.java.getDeclaredMethod(
+            "newProcess",
+            Array<String>::class.java,
+            Array<String>::class.java,
+            String::class.java
+        )
+        method.isAccessible = true
+
+        val process = method.invoke(
+            null,
+            arrayOf("sh"),
+            null,
+            null
+        ) as ShizukuRemoteProcess
+
+        val env = smartWorkPath()
+        if (env != null) {
+            val outputStream = process.outputStream
+            outputStream.write("export ".toByteArray())
+            outputStream.write(env.toByteArray())
+            outputStream.write("\n".toByteArray())
+            outputStream.flush()
+        }
+
         return process
     }
 }

@@ -1,6 +1,7 @@
 package io.github.lumkit.tweak.common.shell
 
 import android.content.Context
+import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.common.shell.io.impl.RootFile
 import io.github.lumkit.tweak.common.shell.provide.ReusableShells
 import io.github.lumkit.tweak.model.Config
@@ -16,6 +17,7 @@ data class BatteryStatus(
 
 object BatteryUtils {
     private var fastChargeScript: String = ""
+
     @Volatile
     private var changeLimitRunning: Boolean = false
     private var isFirstRun: Boolean = true
@@ -31,7 +33,8 @@ object BatteryUtils {
         val seenKeys = mutableSetOf<String>()
 
         batteryInfo.lines().forEach { line ->
-            val (key, value) = line.split(":", limit = 2).map { it.trim() }.takeIf { it.size == 2 } ?: return@forEach
+            val (key, value) = line.split(":", limit = 2).map { it.trim() }.takeIf { it.size == 2 }
+                ?: return@forEach
             if (key in seenKeys) return@forEach
 
             when (key) {
@@ -39,10 +42,12 @@ object BatteryUtils {
                     batteryStatus.statusText = value
                     seenKeys.add(key)
                 }
+
                 "level" -> {
                     batteryStatus.level = value.toIntOrNull() ?: 0
                     seenKeys.add(key)
                 }
+
                 "temperature" -> {
                     batteryStatus.temperature = (value.toFloatOrNull() ?: 0.0f) / 10.0f
                     seenKeys.add(key)
@@ -71,7 +76,10 @@ object BatteryUtils {
      */
     val batteryInfo: String
         get() {
-            val paths = listOf("/sys/class/power_supply/bms/uevent", "/sys/class/power_supply/battery/uevent")
+            val paths = listOf(
+                "/sys/class/power_supply/bms/uevent",
+                "/sys/class/power_supply/battery/uevent"
+            )
             val path = paths.firstOrNull { runBlocking { RootFile(it).exists() } } ?: return ""
 
             val batteryInfos = runBlocking { KernelProp.getProp(path) }
@@ -88,77 +96,96 @@ object BatteryUtils {
                             stringBuilder.append("充满容量 = ${value}mAh\n")
                             mahLength = info.substringAfter('=').length
                         }
+
                         info.startsWith("POWER_SUPPLY_CHARGE_FULL_DESIGN=") -> {
                             val value = info.substringAfter('=').take(4)
                             stringBuilder.append("设计容量 = ${value}mAh\n")
                             mahLength = info.substringAfter('=').length
                         }
+
                         info.startsWith("POWER_SUPPLY_TEMP=") -> {
                             val tempStr = info.substringAfter('=').toIntOrNull() ?: 0
                             val temp = tempStr / 10f
                             stringBuilder.append("电池温度 = ${temp}°C\n")
                         }
+
                         info.startsWith("POWER_SUPPLY_TEMP_WARM=") -> {
                             val temp = info.substringAfter('=').toIntOrNull() ?: 0
                             stringBuilder.append("警戒温度 = ${temp / 10}°C\n")
                         }
+
                         info.startsWith("POWER_SUPPLY_TEMP_COOL=") -> {
                             val temp = info.substringAfter('=').toIntOrNull() ?: 0
                             stringBuilder.append("低温温度 = ${temp / 10}°C\n")
                         }
+
                         info.startsWith("POWER_SUPPLY_VOLTAGE_NOW=") -> {
                             val voltage = strToVoltage(info.substringAfter('='))
                             stringBuilder.append("当前电压 = ${voltage}\n")
                         }
+
                         info.startsWith("POWER_SUPPLY_VOLTAGE_MAX_DESIGN=") -> {
                             val voltage = strToVoltage(info.substringAfter('='))
                             stringBuilder.append("设计电压 = ${voltage}\n")
                         }
+
                         info.startsWith("POWER_SUPPLY_VOLTAGE_MIN=") -> {
                             val voltage = strToVoltage(info.substringAfter('='))
                             stringBuilder.append("最小电压 = ${voltage}\n")
                         }
+
                         info.startsWith("POWER_SUPPLY_VOLTAGE_MAX=") -> {
                             val voltage = strToVoltage(info.substringAfter('='))
                             stringBuilder.append("最大电压 = ${voltage}\n")
                         }
+
                         info.startsWith("POWER_SUPPLY_BATTERY_TYPE=") -> {
                             val type = info.substringAfter('=')
                             stringBuilder.append("电池类型 = ${type}\n")
                         }
+
                         info.startsWith("POWER_SUPPLY_TECHNOLOGY=") -> {
                             val tech = info.substringAfter('=')
                             stringBuilder.append("电池技术 = ${tech}\n")
                         }
+
                         info.startsWith("POWER_SUPPLY_CYCLE_COUNT=") -> {
                             val count = info.substringAfter('=')
                             stringBuilder.append("循环次数 = ${count}\n")
                         }
+
                         info.startsWith("POWER_SUPPLY_CONSTANT_CHARGE_VOLTAGE=") -> {
                             val voltage = strToVoltage(info.substringAfter('='))
                             stringBuilder.append("充电电压 = ${voltage}\n")
                         }
+
                         info.startsWith("POWER_SUPPLY_CAPACITY=") -> {
                             val capacity = info.substringAfter('=')
                             stringBuilder.append("电池电量 = ${capacity}%\n")
                         }
+
                         info.startsWith("POWER_SUPPLY_MODEL_NAME=") -> {
                             val model = info.substringAfter('=')
                             stringBuilder.append("模块/型号 = ${model}\n")
                         }
+
                         info.startsWith("POWER_SUPPLY_CHARGE_TYPE=") -> {
                             val chargeType = info.substringAfter('=')
                             stringBuilder.append("充电类型 = ${chargeType}\n")
                         }
+
                         info.startsWith("POWER_SUPPLY_RESISTANCE_NOW=") -> {
                             val resistance = info.substringAfter('=')
                             stringBuilder.append("电阻/阻值 = ${resistance}\n")
                         }
+
                         info.startsWith("POWER_SUPPLY_CURRENT_NOW=") ||
                                 info.startsWith("POWER_SUPPLY_CONSTANT_CHARGE_CURRENT=") -> {
                             io = info.substringAfter('=')
                         }
-                        else -> { /* 忽略未处理的键 */ }
+
+                        else -> { /* 忽略未处理的键 */
+                        }
                     }
                 } catch (e: NumberFormatException) {
                     // 记录异常日志（假设有日志系统）
@@ -168,7 +195,8 @@ object BatteryUtils {
 
             if (io.isNotEmpty() && mahLength != 0) {
                 val limit = try {
-                    val divisor = if (mahLength < 5) 1 else 10.0.pow((mahLength - 4).toDouble()).toInt()
+                    val divisor =
+                        if (mahLength < 5) 1 else 10.0.pow((mahLength - 4).toDouble()).toInt()
                     (io.toInt() / divisor)
                 } catch (e: NumberFormatException) {
                     0
@@ -202,34 +230,41 @@ object BatteryUtils {
                             voltage = voltageStr.removeSuffix("v").toFloatOrNull() ?: 0f
                             stringBuilder.append("当前电压 = ${voltageStr}\n")
                         }
+
                         info.startsWith("POWER_SUPPLY_CURRENT_MAX=") -> {
                             val current = (info.substringAfter('=').toIntOrNull() ?: 0) / 1_000_000f
                             if (current > 0) {
                                 stringBuilder.append("最大电流 = ${current}A\n")
                             }
                         }
+
                         info.startsWith("POWER_SUPPLY_PD_VOLTAGE_MAX=") -> {
                             val voltage = strToVoltage(info.substringAfter('='))
                             stringBuilder.append("最大电压(PD) = ${voltage}\n")
                         }
+
                         info.startsWith("POWER_SUPPLY_CONNECTOR_TEMP=") -> {
                             val temp = (info.substringAfter('=').toIntOrNull() ?: 0) / 10.0f
                             stringBuilder.append("接口温度 = ${temp}°C\n")
                         }
+
                         info.startsWith("POWER_SUPPLY_PD_VOLTAGE_MIN=") -> {
                             val voltage = strToVoltage(info.substringAfter('='))
                             stringBuilder.append("最小电压(PD) = ${voltage}\n")
                         }
+
                         info.startsWith("POWER_SUPPLY_PD_CURRENT_MAX=") -> {
                             val current = (info.substringAfter('=').toIntOrNull() ?: 0) / 1_000_000f
                             if (current > 0) {
                                 stringBuilder.append("最大电流(PD) = ${current}A\n")
                             }
                         }
+
                         info.startsWith("POWER_SUPPLY_INPUT_CURRENT_NOW=") ||
                                 info.startsWith("POWER_SUPPLY_CONSTANT_CHARGE_CURRENT=") -> {
                             electricity = (info.substringAfter('=').toIntOrNull() ?: 0) / 1_000_000f
                         }
+
                         info.startsWith("POWER_SUPPLY_QUICK_CHARGE_TYPE=") -> {
                             val type = info.substringAfter('=')
                             val chargeType = when (type) {
@@ -238,20 +273,25 @@ object BatteryUtils {
                             }
                             stringBuilder.append("快充类型 = ${chargeType}\n")
                         }
+
                         info.startsWith("POWER_SUPPLY_REAL_TYPE=") -> {
                             val realType = info.substringAfter('=')
                             stringBuilder.append("输电协议 = ${realType}\n")
                         }
+
                         info.startsWith("POWER_SUPPLY_HVDCP3_TYPE=") -> {
                             val type = info.substringAfter('=')
                             val hvdcp3Type = if (type == "0") "否" else "类型$type"
                             stringBuilder.append("高压快充 = ${hvdcp3Type}\n")
                         }
+
                         info.startsWith("POWER_SUPPLY_PD_AUTHENTICATION=") -> {
                             pdAuth = info.substringAfter('=') == "1"
                             stringBuilder.append("PD认证 = ${if (pdAuth) "已认证" else "未认证"}\n")
                         }
-                        else -> { /* 忽略未处理的键 */ }
+
+                        else -> { /* 忽略未处理的键 */
+                        }
                     }
                 } catch (e: NumberFormatException) {
                     // 记录异常日志
@@ -293,7 +333,10 @@ object BatteryUtils {
      * 设置步进充电状态
      */
     suspend fun setStepCharge(stepCharge: Boolean) {
-        KernelProp.setProp("/sys/class/power_supply/battery/step_charging_enabled", if (stepCharge) "1" else "0")
+        KernelProp.setProp(
+            "/sys/class/power_supply/battery/step_charging_enabled",
+            if (stepCharge) "1" else "0"
+        )
     }
 
     /**
@@ -301,7 +344,8 @@ object BatteryUtils {
      */
     suspend fun getQcLimit(): String {
         if (useMainConstant == null) {
-            useMainConstant = RootFile("/sys/class/power_supply/main/constant_charge_current_max").exists()
+            useMainConstant =
+                RootFile("/sys/class/power_supply/main/constant_charge_current_max").exists()
         }
 
         val path = if (useMainConstant == true) {
@@ -322,6 +366,7 @@ object BatteryUtils {
                     limit
                 }
             }
+
             else -> "?mA"
         }
         return limit
@@ -352,24 +397,28 @@ object BatteryUtils {
 
         return try {
             if (fastChargeScript.isEmpty()) {
-                val scriptPath = listOf("script/fast_charge.sh", "script/fast_charge_run_once.sh").map {
-                    context.assets.open(it).use { `is` -> 
-                        `is`.buffered().use { bis -> 
-                            val file =
-                                File(Config.Path.ScriptDir, it.substring(it.indexOf("/") + 1))
-                            file.outputStream().use { os ->
-                                os.buffered().use { bos ->
-                                    bis.copyTo(bos)
+                val scriptPath =
+                    listOf("script/fast_charge.sh", "script/fast_charge_run_once.sh").map {
+                        context.assets.open(it).use { `is` ->
+                            `is`.buffered().use { bis ->
+                                val file =
+                                    File(Config.Path.ScriptDir, it.substring(it.indexOf("/") + 1))
+                                file.outputStream().use { os ->
+                                    os.buffered().use { bos ->
+                                        bis.copyTo(bos)
+                                    }
                                 }
+                                file.absolutePath
                             }
-                            file.absolutePath
                         }
                     }
-                }
 
                 if (scriptPath.all { it != null }) {
                     if (isFirstRun) {
-                        ReusableShells.getInstance("setChargeInputLimit").commitCmdSync("sh ${scriptPath[1]}")
+                        ReusableShells.getInstance(
+                            "setChargeInputLimit",
+                            status = TweakApplication.runtimeStatus
+                        ).commitCmdSync("sh ${scriptPath[1]}")
                         isFirstRun = false
                     }
                     fastChargeScript = "sh ${scriptPath[0]} "
@@ -380,12 +429,18 @@ object BatteryUtils {
                 if (limit > 3000) {
                     var current = 3000
                     while (current < (limit - 300) && current < 5000) {
-                        val result = ReusableShells.getInstance("setChargeInputLimit").commitCmdSync("$fastChargeScript$current 1")
+                        val result = ReusableShells.getInstance(
+                            "setChargeInputLimit",
+                            status = TweakApplication.runtimeStatus
+                        ).commitCmdSync("$fastChargeScript$current 1")
                         if (result == "error") break
                         current += 300
                     }
                 }
-                ReusableShells.getInstance("setChargeInputLimit").commitCmdSync("$fastChargeScript$limit 0")
+                ReusableShells.getInstance(
+                    "setChargeInputLimit",
+                    status = TweakApplication.runtimeStatus
+                ).commitCmdSync("$fastChargeScript$limit 0")
                 true
             } else {
                 false
@@ -470,7 +525,8 @@ object BatteryUtils {
         }
         if (kernelCapacitySupported == true) {
             try {
-                val raw = KernelProp.getProp("/sys/class/power_supply/bms/capacity_raw") ?: return -1f
+                val raw =
+                    KernelProp.getProp("/sys/class/power_supply/bms/capacity_raw") ?: return -1f
                 val capacityValue = raw.toIntOrNull() ?: return -1f
 
                 val valueMA = if (kotlin.math.abs(capacityValue - approximate) >

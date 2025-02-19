@@ -1,6 +1,8 @@
 package io.github.lumkit.tweak.ui.screen.main.page
 
 import android.content.Context
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,7 +20,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -51,11 +52,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import io.github.lumkit.tweak.LocalAnimateContentScope
 import io.github.lumkit.tweak.LocalScreenNavigationController
+import io.github.lumkit.tweak.LocalSharedTransitionScope
 import io.github.lumkit.tweak.R
-import io.github.lumkit.tweak.ui.component.FolderItem
+import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.ui.screen.ScreenRoute
 
 @Composable
@@ -64,6 +66,7 @@ fun FunctionPage(
     viewModel: FunctionPageViewModel = viewModel { FunctionPageViewModel(context) }
 ) {
     val navHostController = LocalScreenNavigationController.current
+
     Box(
         Modifier
             .fillMaxSize()
@@ -77,7 +80,10 @@ fun FunctionPage(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun BoxScope.Search(viewModel: FunctionPageViewModel, navHostController: NavHostController) {
+private fun BoxScope.Search(
+    viewModel: FunctionPageViewModel,
+    navHostController: NavHostController
+) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     val search by viewModel.searchTextState.collectAsStateWithLifecycle()
     val plateOrigin by viewModel.plateState.collectAsStateWithLifecycle()
@@ -157,21 +163,26 @@ private fun BoxScope.Search(viewModel: FunctionPageViewModel, navHostController:
             modifier = Modifier.fillMaxWidth()
         ) {
             items(modulesSearch) {
+                val enabled = TweakApplication.runtimeStatus >= it.runtimeStatus
                 ListItem(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable(enabled = it.enabled) {
+                        .clickable(enabled = enabled) {
                             viewModel.setSearchText("")
                             expanded = false
                             navHostController.navigate(it.route) {
-                                popUpTo(navHostController.currentBackStackEntry?.destination?.route ?: ScreenRoute.MAIN) {
+                                popUpTo(
+                                    navHostController.currentBackStackEntry?.destination?.route
+                                        ?: ScreenRoute.MAIN
+                                ) {
                                     saveState = true
                                 }
                                 restoreState = true
                                 launchSingleTop = true
                             }
-                        }.alpha(
-                            alpha = if (it.enabled) {
+                        }
+                        .alpha(
+                            alpha = if (enabled) {
                                 1f
                             } else {
                                 .5f
@@ -180,7 +191,7 @@ private fun BoxScope.Search(viewModel: FunctionPageViewModel, navHostController:
                     headlineContent = {
                         Text(
                             text = it.title,
-                            textDecoration = if (it.enabled) {
+                            textDecoration = if (enabled) {
                                 TextDecoration.None
                             } else {
                                 TextDecoration.LineThrough
@@ -195,7 +206,7 @@ private fun BoxScope.Search(viewModel: FunctionPageViewModel, navHostController:
                         ) {
                             Icon(
                                 painter = painterResource(it.icon),
-                                contentDescription = null
+                                contentDescription = null,
                             )
                         }
                     },
@@ -230,12 +241,15 @@ private fun Plates(viewModel: FunctionPageViewModel, navHostController: NavHostC
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
 private fun PlateItem(
     funPlate: FunctionPageViewModel.FunPlate,
     navHostController: NavHostController
 ) {
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+    val animatedContentScope = LocalAnimateContentScope.current
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -252,48 +266,63 @@ private fun PlateItem(
             maxItemsInEachRow = 2
         ) {
             funPlate.modules.forEach {
-                OutlinedCard(
-                    modifier = Modifier.fillMaxWidth()
-                        .weight(1f),
-                    onClick = {
-                        navHostController.navigate(it.route) {
-                            popUpTo(ScreenRoute.MAIN) {
-                                saveState = true
-                            }
-                            restoreState = true
-                        }
-                    },
-                    enabled = it.enabled,
-                    colors = CardDefaults.outlinedCardColors()
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth()
-                            .padding(vertical = 12.dp, horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Surface(
-                            modifier = Modifier.size(16.dp),
-                            contentColor = MaterialTheme.colorScheme.outline,
-                            color = Color.Transparent
-                        ) {
-                            Icon(
-                                painter = painterResource(it.icon),
-                                contentDescription = null
-                            )
-                        }
-                        Column {
-                            Text(
-                                text = it.title,
-                                style = MaterialTheme.typography.labelMedium,
-                                overflow = TextOverflow.Ellipsis,
-                                softWrap = false,
-                                textDecoration = if (it.enabled) {
-                                    TextDecoration.None
-                                } else {
-                                    TextDecoration.LineThrough
+                sharedTransitionScope.run {
+                    val enabled = TweakApplication.runtimeStatus >= it.runtimeStatus
+                    OutlinedCard(
+                        modifier = Modifier
+                            .sharedBounds(
+                                sharedContentState = rememberSharedContentState("${it.route}-box"),
+                                animatedVisibilityScope = animatedContentScope,
+                            ).weight(1f),
+                        onClick = {
+                            navHostController.navigate(it.route) {
+                                popUpTo(ScreenRoute.MAIN) {
+                                    saveState = true
                                 }
-                            )
+                                restoreState = true
+                            }
+                        },
+                        enabled = enabled,
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 12.dp, horizontal = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Surface(
+                                modifier = Modifier.size(16.dp),
+                                contentColor = MaterialTheme.colorScheme.outline,
+                                color = Color.Transparent
+                            ) {
+
+                                Icon(
+                                    painter = painterResource(it.icon),
+                                    contentDescription = null,
+                                    modifier = Modifier.sharedBounds(
+                                        sharedContentState = rememberSharedContentState("${it.route}-icon"),
+                                        animatedVisibilityScope = animatedContentScope
+                                    )
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = it.title,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    overflow = TextOverflow.Ellipsis,
+                                    softWrap = false,
+                                    textDecoration = if (enabled) {
+                                        TextDecoration.None
+                                    } else {
+                                        TextDecoration.LineThrough
+                                    },
+                                    modifier = Modifier.sharedBounds(
+                                        sharedContentState = rememberSharedContentState("${it.route}-title"),
+                                        animatedVisibilityScope = animatedContentScope
+                                    )
+                                )
+                            }
                         }
                     }
                 }

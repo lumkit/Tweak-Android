@@ -1,5 +1,6 @@
 package io.github.lumkit.tweak.ui.screen.settings
 
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -23,8 +24,10 @@ import io.github.lumkit.tweak.common.util.startBrowser
 import io.github.lumkit.tweak.ui.component.DetailItem
 import io.github.lumkit.tweak.ui.component.PlainTooltipBox
 import io.github.lumkit.tweak.ui.component.ScreenScaffold
+import io.github.lumkit.tweak.ui.component.SharedTransitionText
+import io.github.lumkit.tweak.ui.screen.ScreenRoute
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun OpenSourceScreen(
     viewModel: OpenSourceViewModel = viewModel { OpenSourceViewModel() }
@@ -34,8 +37,9 @@ fun OpenSourceScreen(
     val licenseState by viewModel.licenseState.collectAsStateWithLifecycle()
 
     ScreenScaffold(
+        sharedKey = ScreenRoute.OPEN_SOURCE,
         title = {
-            Text(
+            SharedTransitionText(
                 text = stringResource(R.string.text_open_sources)
             )
         }

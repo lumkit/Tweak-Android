@@ -13,14 +13,15 @@ import androidx.annotation.StringRes
 import androidx.core.app.NotificationCompat
 import androidx.core.net.toUri
 import io.github.lumkit.tweak.R
+import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.common.shell.module.UpdateEngineClient
 import io.github.lumkit.tweak.common.shell.provide.ReusableShells
+import io.github.lumkit.tweak.data.RuntimeStatus
 import io.github.lumkit.tweak.model.Const
 import io.github.lumkit.tweak.ui.screen.ScreenRoute
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 
 class PersistentTaskService : Service() {
 
@@ -56,14 +57,25 @@ class PersistentTaskService : Service() {
         initService()
 
         CoroutineScope(Dispatchers.IO).launch {
-            if (ReusableShells.checkRoot()) {
-                startUpdateEngineClientFollow()
+            when (TweakApplication.runtimeStatus) {
+                RuntimeStatus.Normal -> {
+                    // TODO 默认模式下的持久服务
+                }
+                RuntimeStatus.Shizuku -> {
+                    // TODO Shizuku模式下的持久服务
+
+                }
+                RuntimeStatus.Root -> {
+                    if (ReusableShells.checkRoot()) {
+                        startUpdateEngineClientFollow()
+                    }
+                }
             }
         }
     }
 
     private fun initService() {
-        notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
         initNotification()
     }

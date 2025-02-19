@@ -2,8 +2,11 @@ package io.github.lumkit.tweak.ui.screen.runtime
 
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,8 +22,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
@@ -41,7 +46,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -51,8 +55,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import io.github.lumkit.tweak.LocalScreenNavigationController
 import io.github.lumkit.tweak.R
+import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.common.shell.provide.ReusableShells
 import io.github.lumkit.tweak.common.util.makeText
+import io.github.lumkit.tweak.data.RuntimeStatus
 import io.github.lumkit.tweak.model.Config
 import io.github.lumkit.tweak.model.Const
 import io.github.lumkit.tweak.ui.component.AnimatedLogo
@@ -67,7 +73,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun RuntimeModeScreen(
-    activity: ComponentActivity = LocalContext.current as ComponentActivity,
+    activity: ComponentActivity = LocalActivity.current as ComponentActivity,
     storageStore: StorageStore = LocalStorageStore.current,
     viewModel: RuntimeModeViewModel = viewModel {
         RuntimeModeViewModel(
@@ -76,10 +82,26 @@ fun RuntimeModeScreen(
         )
     }
 ) {
-    LaunchedEffect(viewModel) {
+    // 第二次初始化，切换为su或shizuku
+    LaunchedEffect(TweakApplication.runtimeStatus) {
         if (storageStore.getBoolean(Const.APP_ACCEPT_RISK)) {
-            viewModel.initRootModeConfig {
-                Toast.makeText(activity, it.makeText(), Toast.LENGTH_SHORT).show()
+            when (TweakApplication.runtimeStatus) {
+                RuntimeStatus.Normal -> {
+                    // TODO 默认初始化 权限检查
+
+                }
+
+                RuntimeStatus.Shizuku -> {
+                    viewModel.initShizukuModeConfig {
+                        Toast.makeText(activity, it.makeText(), Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                RuntimeStatus.Root -> {
+                    viewModel.initRootModeConfig { throwable ->
+                        Toast.makeText(activity, throwable.makeText(), Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         }
     }
@@ -122,12 +144,13 @@ fun RuntimeModeScreen(
 @Composable
 private fun FolderItems(viewModel: RuntimeModeViewModel, storageStore: StorageStore) {
 
-    val activity = LocalContext.current as ComponentActivity
+    val activity = LocalActivity.current as ComponentActivity
 
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        // Root模式
         FolderItem(
             modifier = Modifier.fillMaxWidth(),
             onClick = {
@@ -168,14 +191,99 @@ private fun FolderItems(viewModel: RuntimeModeViewModel, storageStore: StorageSt
                 )
             }
         )
+
+        // Shizuku模式
+        FolderItem(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = {
+                viewModel.setShizukuModeDialogState(true)
+            },
+            icon = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(CardDefaults.outlinedCardColors().containerColor)
+                        .border(.5.dp, color = DividerDefaults.color, RoundedCornerShape(8.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.ic_shizuku_logo),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .padding(8.dp)
+                            .fillMaxSize(),
+                    )
+                }
+            },
+            title = {
+                Text(
+                    text = stringResource(R.string.text_runtime_mode_shizuku_mode)
+                )
+            },
+            subtitle = {
+                Text(
+                    text = stringResource(R.string.text_runtime_mode_shizuku_mode_tips)
+                )
+            },
+            trailingIcon = {
+                Icon(
+                    painter = painterResource(R.drawable.ic_right),
+                    contentDescription = null,
+                )
+            }
+        )
+
+        // TODO: 基础模式
+//        FolderItem(
+//            modifier = Modifier.fillMaxWidth(),
+//            onClick = {
+//
+//            },
+//            icon = {
+//                Box(
+//                    modifier = Modifier
+//                        .fillMaxSize()
+//                        .clip(RoundedCornerShape(8.dp))
+//                        .background(MaterialTheme.colorScheme.primary.copy(alpha = .55f)),
+//                    contentAlignment = Alignment.Center
+//                ) {
+//                    Icon(
+//                        painter = painterResource(R.drawable.ic_android_icon),
+//                        contentDescription = null,
+//                        modifier = Modifier
+//                            .padding(8.dp)
+//                            .fillMaxSize(),
+//                        tint = MaterialTheme.colorScheme.surface
+//                    )
+//                }
+//            },
+//            title = {
+//                Text(
+//                    text = stringResource(R.string.text_runtime_mode_normal_mode)
+//                )
+//            },
+//            subtitle = {
+//                Text(
+//                    text = stringResource(R.string.text_runtime_mode_normal_mode_tips)
+//                )
+//            },
+//            trailingIcon = {
+//                Icon(
+//                    painter = painterResource(R.drawable.ic_right),
+//                    contentDescription = null,
+//                )
+//            }
+//        )
     }
 
-    UseProtocolDialog(viewModel, activity, storageStore)
+    UseProtocolForRootDialog(viewModel, activity, storageStore)
+    UseProtocolForShizukuDialog(viewModel, activity, storageStore)
     CheckPermissionsDialog(viewModel, activity, storageStore)
 }
 
 @Composable
-private fun UseProtocolDialog(
+private fun UseProtocolForRootDialog(
     viewModel: RuntimeModeViewModel,
     activity: ComponentActivity,
     storageStore: StorageStore
@@ -209,7 +317,7 @@ private fun UseProtocolDialog(
             text = {
                 Column {
                     Text(
-                        text = stringResource(R.string.text_use_protocol_content),
+                        text = stringResource(R.string.text_use_protocol_content_for_root),
                         modifier = Modifier
                             .fillMaxWidth()
                             .verticalScroll(rememberScrollState())
@@ -278,7 +386,121 @@ private fun UseProtocolDialog(
                 FilledTonalButton(
                     onClick = {
                         viewModel.setRootModeDialogState(false)
-                        activity.finish()
+                    }
+                ) {
+                    Text(
+                        text = stringResource(R.string.text_cancel)
+                    )
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun UseProtocolForShizukuDialog(
+    viewModel: RuntimeModeViewModel,
+    activity: ComponentActivity,
+    storageStore: StorageStore
+) {
+    val shizukuDialogState by viewModel.shizukuModeDialogState.collectAsStateWithLifecycle()
+
+    if (shizukuDialogState) {
+        var acceptRisk by remember { mutableStateOf(false) }
+        var countdown by remember { mutableIntStateOf(8) }
+
+        LaunchedEffect(Unit) {
+            acceptRisk = storageStore.getBoolean(Const.APP_ACCEPT_RISK)
+        }
+
+        LaunchedEffect(Unit) {
+            while (isActive && countdown >= 0) {
+                delay(1000)
+                countdown--
+            }
+        }
+
+        AlertDialog(
+            onDismissRequest = {
+                viewModel.setShizukuModeDialogState(false)
+            },
+            title = {
+                Text(
+                    text = stringResource(R.string.text_use_protocol)
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = stringResource(R.string.text_use_protocol_content_for_shizuku),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState())
+                            .weight(1f, false)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    FolderItem(
+                        modifier = Modifier.fillMaxWidth(),
+                        icon = {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(MaterialTheme.colorScheme.error.copy(.8f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_dangerous),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .padding(8.dp)
+                                        .fillMaxSize(),
+                                    tint = MaterialTheme.colorScheme.surface
+                                )
+                            }
+                        },
+                        title = {
+                            Text(
+                                text = stringResource(R.string.text_accept_risk),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        },
+                        subtitle = {
+                            Text(
+                                text = stringResource(R.string.text_accept_risk_tips),
+                            )
+                        },
+                        trailingIcon = {
+                            Switch(
+                                checked = acceptRisk,
+                                onCheckedChange = { acceptRisk = it }
+                            )
+                        }
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.initShizukuModeConfig {
+                            Toast.makeText(activity, it.makeText(), Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    enabled = countdown < 0 && acceptRisk
+                ) {
+                    Text(
+                        text = if (countdown < 0) {
+                            stringResource(R.string.text_accept_and_continue)
+                        } else {
+                            "${countdown}S"
+                        }
+                    )
+                }
+            },
+            dismissButton = {
+                FilledTonalButton(
+                    onClick = {
+                        viewModel.setShizukuModeDialogState(false)
                     }
                 ) {
                     Text(
@@ -296,7 +518,7 @@ private fun CheckPermissionsDialog(
     activity: ComponentActivity,
     storageStore: StorageStore
 ) {
-    val ioScope = rememberCoroutineScope{ Dispatchers.IO }
+    val ioScope = rememberCoroutineScope { Dispatchers.IO }
     val initConfigDialogState by viewModel.initConfigDialogState.collectAsStateWithLifecycle()
     val initConfigDialogMessage by viewModel.initConfigDialogMessage.collectAsStateWithLifecycle()
     val permissionState by viewModel.permissionState.collectAsStateWithLifecycle()
@@ -327,6 +549,7 @@ private fun CheckPermissionsDialog(
                                 Text(text = initConfigDialogMessage)
                             }
                         }
+
                         RuntimeModeViewModel.PermissionState.Success -> {
                             LaunchedEffect(Unit) {
                                 viewModel.setInitConfigDialogState(false)
@@ -338,12 +561,14 @@ private fun CheckPermissionsDialog(
                             }
                             Text(text = stringResource(R.string.text_init_app_success))
                         }
+
                         RuntimeModeViewModel.PermissionState.RetryCheckRoot -> {
                             Column {
                                 var userId by remember { mutableStateOf("su") }
 
                                 LaunchedEffect(Unit) {
-                                    userId = storageStore.getString(Const.APP_SHELL_ROOT_USER) ?: "su"
+                                    userId =
+                                        storageStore.getString(Const.APP_SHELL_ROOT_USER) ?: "su"
                                 }
 
                                 Text(text = initConfigDialogMessage)
@@ -360,7 +585,11 @@ private fun CheckPermissionsDialog(
                                             style = MaterialTheme.typography.bodyMedium
                                         )
                                         Text(
-                                            text = String.format("%s: %s", stringResource(R.string.text_change_root_user_tip), userId),
+                                            text = String.format(
+                                                "%s: %s",
+                                                stringResource(R.string.text_change_root_user_tip),
+                                                userId
+                                            ),
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.outline
                                         )
@@ -406,32 +635,58 @@ private fun CheckPermissionsDialog(
                                 }
                             }
                         }
+
+                        RuntimeModeViewModel.PermissionState.RetryCheckShizuku -> {
+                            Text(text = initConfigDialogMessage)
+                        }
                     }
                 }
             },
             confirmButton = {
                 Row {
-                   AnimatedContent(
-                       targetState = permissionState
-                   ) {
-                       when (it) {
-                           RuntimeModeViewModel.PermissionState.Request -> Unit
-                           RuntimeModeViewModel.PermissionState.Success -> Unit
-                           RuntimeModeViewModel.PermissionState.RetryCheckRoot -> {
-                               Button(
-                                   onClick = {
-                                       viewModel.initRootModeConfig { throwable ->
-                                           Toast.makeText(activity, throwable.makeText(), Toast.LENGTH_SHORT).show()
-                                       }
-                                   }
-                               ) {
-                                   Text(
-                                       text = stringResource(R.string.text_retry)
-                                   )
-                               }
-                           }
-                       }
-                   }
+                    AnimatedContent(
+                        targetState = permissionState
+                    ) {
+                        when (it) {
+                            RuntimeModeViewModel.PermissionState.Request -> Unit
+                            RuntimeModeViewModel.PermissionState.Success -> Unit
+                            RuntimeModeViewModel.PermissionState.RetryCheckRoot -> {
+                                Button(
+                                    onClick = {
+                                        viewModel.initRootModeConfig { throwable ->
+                                            Toast.makeText(
+                                                activity,
+                                                throwable.makeText(),
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    }
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.text_retry)
+                                    )
+                                }
+                            }
+
+                            RuntimeModeViewModel.PermissionState.RetryCheckShizuku -> {
+                                Button(
+                                    onClick = {
+                                        viewModel.initShizukuModeConfig { throwable ->
+                                            Toast.makeText(
+                                                activity,
+                                                throwable.makeText(),
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    }
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.text_retry)
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             },
             dismissButton = {
@@ -442,14 +697,13 @@ private fun CheckPermissionsDialog(
                         when (it) {
                             RuntimeModeViewModel.PermissionState.Request -> Unit
                             RuntimeModeViewModel.PermissionState.Success -> Unit
-                            RuntimeModeViewModel.PermissionState.RetryCheckRoot -> {
+                            RuntimeModeViewModel.PermissionState.RetryCheckRoot, RuntimeModeViewModel.PermissionState.RetryCheckShizuku -> {
                                 FilledTonalButton(
                                     onClick = {
-                                        activity.finish()
-
+                                        viewModel.setInitConfigDialogState(false)
                                     }
                                 ) {
-                                    Text(text = stringResource(R.string.text_exit_app))
+                                    Text(text = stringResource(R.string.text_cancel))
                                 }
                             }
                         }

@@ -64,7 +64,7 @@ import io.github.lumkit.tweak.ui.local.LocalStorageStore
 import io.github.lumkit.tweak.ui.local.StorageStore
 import io.github.lumkit.tweak.ui.screen.main.page.LoginViewModel
 import io.github.lumkit.tweak.util.Aes
-import io.github.lumkit.tweak.util.FieldValidatorUtil
+import io.github.lumkit.tweak.common.util.FieldValidatorUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext

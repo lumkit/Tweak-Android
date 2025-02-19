@@ -7,7 +7,6 @@ import io.github.lumkit.tweak.common.shell.provide.ReusableShells
 import io.github.lumkit.tweak.common.status.TweakException
 import io.github.lumkit.tweak.data.UpdateEngineStatus
 import io.github.lumkit.tweak.model.Config
-import io.github.lumkit.tweak.services.PersistentTaskService
 import io.github.lumkit.tweak.services.PersistentTaskService.Companion.progress
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -78,7 +77,7 @@ class UpdateEngineClient {
     }
 
     private val reusableShell =
-        ReusableShells.getInstance("update_engine_client", redirectErrorStream = true)
+        ReusableShells.getInstance("update_engine_client", redirectErrorStream = true, status = TweakApplication.runtimeStatus)
     private val updateEngineCoroutine = CoroutineScope(Dispatchers.IO)
     private val updateEnginClientFile = RootFile("/system/bin/update_engine_client")
 

@@ -28,6 +28,7 @@ kotlin {
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
+            implementation(compose.animation)
 
             implementation(libs.kotlin.reflect)
         }
@@ -56,6 +57,15 @@ kotlin {
 
             // 颜色选择器 https://github.com/mhssn95/compose-color-picker
             implementation(libs.color.picker)
+
+            // libsu https://github.com/topjohnwu/libsu
+            implementation(libs.libsu.core)
+            implementation(libs.libsu.service)
+            implementation(libs.libsu.nio)
+
+            // Shizuku https://github.com/RikkaApps/Shizuku-API
+            implementation(libs.shizuku.api)
+            implementation(libs.shizuku.provider)
         }
     }
 }
@@ -74,7 +84,7 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = versionCodeFormat.format(Date()).toInt().also { println("version code: $it") }
 //        versionCode = 1
-        versionName = "0.0.4-Alpha"
+        versionName = "0.0.5-Alpha"
     }
 
     signingConfigs {
@@ -181,7 +191,6 @@ android {
         compose = true
         buildConfig = true
         aidl = true
-        prefab = true
     }
 }
 

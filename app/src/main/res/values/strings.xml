@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="text_runtime_mode_shizuku_mode">Shizuku模式</string>
+    <string name="text_runtime_mode_shizuku_mode_tips">可以使用大部分【查看】和部分【修改】功能</string>
+    <string name="text_runtime_mode_normal_mode">基础模式</string>
+    <string name="text_runtime_mode_normal_mode_tips">可以使用少部分功能</string>
+    <string name="text_use_protocol_content_for_shizuku">在Shizuku模式下，你除了访问相当一部分Tweak更多功能外，还会额外开放系统应用卸载，权限管理等功能，如果你误操作卸载了重要的系统应用，可能需要恢复出厂设置才能开机。\n\n如果您愿意接收风险，使用时请务必小心谨慎，认真阅读功能展示的警示信息，不要轻易卸载不明用途的系统程序！\n\n*此外，Tweak可能会收集您的设备型号、设备厂家、设备ID信息、硬件配置参数、性能统计等数据，并发送至云端用于用户群体分析和改进适配的情况。</string>
+    <string name="text_function_is_development">功能开发中…</string>
+    <string name="text_shizuku_service_is_nonactivated">Shizuku服务未激活，已退出Tweak</string>
+    <string name="text_change_runtime_status">切换运行模式</string>
+    <string name="text_change_runtime_status_tips">切换运行模式需要重启APP</string>
+    <string name="text_change">切换</string>
+    <string name="text_now_status">当前模式</string>
+    <string name="text_alert">温馨提示</string>
+    <string name="text_change_runtime_status_and_restart">切换并重启</string>
+    <string name="text_change_runtime_status_message">将运行模式切换到【%s】需要重启Tweak，是否继续？</string>
+</resources>

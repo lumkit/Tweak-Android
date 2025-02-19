@@ -1,6 +1,7 @@
 package io.github.lumkit.tweak.common.shell.provide
 
 import android.util.Log
+import io.github.lumkit.tweak.data.RuntimeStatus
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,23 +25,24 @@ import java.util.concurrent.ConcurrentHashMap
 class ReusableShell(
     val user: String,
     private val redirectErrorStream: Boolean = false,
+    val status: RuntimeStatus,
 ) {
     companion object {
         private const val CHECK_ROOT_STATE =
-        "if [[ \$(id -u 2>&1) == '0' ]] || [[ \$(\$UID) == '0' ]] || [[ \$(whoami 2>&1) == 'root' ]] || [[ \$(set | grep 'USER_ID=0') == 'USER_ID=0' ]]; then\n" +
-        "  echo 'success'\n" +
-        "else\n" +
-        "if [[ -d /cache ]]; then\n" +
-        "  echo 1 > /cache/tweak_root\n" +
-        "  if [[ -f /cache/tweak_root ]] && [[ \$(cat /cache/tweak_root) == '1' ]]; then\n" +
-        "    echo 'success'\n" +
-        "    rm -rf /cache/tweak_root\n" +
-        "    return\n" +
-        "  fi\n" +
-        "fi\n" +
-        "exit 1\n" +
-        "exit 1\n" +
-        "fi\n"
+            "if [[ \$(id -u 2>&1) == '0' ]] || [[ \$(\$UID) == '0' ]] || [[ \$(whoami 2>&1) == 'root' ]] || [[ \$(set | grep 'USER_ID=0') == 'USER_ID=0' ]]; then\n" +
+                    "  echo 'success'\n" +
+                    "else\n" +
+                    "if [[ -d /cache ]]; then\n" +
+                    "  echo 1 > /cache/tweak_root\n" +
+                    "  if [[ -f /cache/tweak_root ]] && [[ \$(cat /cache/tweak_root) == '1' ]]; then\n" +
+                    "    echo 'success'\n" +
+                    "    rm -rf /cache/tweak_root\n" +
+                    "    return\n" +
+                    "  fi\n" +
+                    "fi\n" +
+                    "exit 1\n" +
+                    "exit 1\n" +
+                    "fi\n"
 
         private const val LOCK_TIMEOUT = 10_000
         private const val START_TAG = "|SH>>|"
@@ -63,7 +65,10 @@ class ReusableShell(
         listenerPool["default"] = lineListener
     }
 
-    fun addOnReadLineListener(name: String = UUID.randomUUID().toString(), lineListener: (String) -> Unit) {
+    fun addOnReadLineListener(
+        name: String = UUID.randomUUID().toString(),
+        lineListener: (String) -> Unit
+    ) {
         listenerPool[name] = lineListener
     }
 
@@ -80,15 +85,18 @@ class ReusableShell(
         try {
             writer?.close()
             writer = null
-        }catch (_: Exception) { }
+        } catch (_: Exception) {
+        }
         try {
             reader?.close()
             reader = null
-        }catch (_: Exception) { }
+        } catch (_: Exception) {
+        }
         try {
             process?.destroy()
             process = null
-        }catch (_: Exception) { }
+        } catch (_: Exception) {
+        }
         currentIsIdle = true
     }
 
@@ -101,15 +109,27 @@ class ReusableShell(
             mutex.withLock {
                 enterLockTime = Clock.System.now().toEpochMilliseconds()
                 try {
-                    val process = RuntimeProvider.getProcess(user, redirectErrorStream)
+                    val process = when (status) {
+                        RuntimeStatus.Normal, RuntimeStatus.Root -> {
+                            RuntimeProvider.getProcess(
+                                if (status == RuntimeStatus.Root) user else "sh",
+                                redirectErrorStream
+                            )
+                        }
+
+                        RuntimeStatus.Shizuku -> RuntimeProvider.getAdbProcess()
+                    }
+
                     this@ReusableShell.process = process
                     this@ReusableShell.writer = process.outputStream.bufferedWriter()
                     this@ReusableShell.reader = process.inputStream.bufferedReader()
 
-                    if (user.contains("su")) {
-                        writer?.apply {
-                            write(CHECK_ROOT_STATE)
-                            flush()
+                    if (status == RuntimeStatus.Root) {
+                        if (user.contains("su")) {
+                            writer?.apply {
+                                write(CHECK_ROOT_STATE)
+                                flush()
+                            }
                         }
                     }
 
@@ -124,7 +144,7 @@ class ReusableShell(
                             }
                         }
                     }
-                }catch (e: Exception) {
+                } catch (e: Exception) {
                     Log.e("ReusableShell", e.message ?: "Unknown error")
                 } finally {
                     enterLockTime = 0L
@@ -134,9 +154,14 @@ class ReusableShell(
     }
 
     suspend fun commitCmdSync(cmd: String): String = withContext(Dispatchers.IO) {
-        if (mutex.isLocked && enterLockTime > 0 && Clock.System.now().toEpochMilliseconds() - enterLockTime > LOCK_TIMEOUT) {
+        if (mutex.isLocked && enterLockTime > 0 && Clock.System.now()
+                .toEpochMilliseconds() - enterLockTime > LOCK_TIMEOUT
+        ) {
             tryExit()
-            Log.e("commitCmdSync-Lock", "线程等待超时: ${System.currentTimeMillis() - enterLockTime > LOCK_TIMEOUT}ms")
+            Log.e(
+                "commitCmdSync-Lock",
+                "线程等待超时: ${System.currentTimeMillis() - enterLockTime > LOCK_TIMEOUT}ms"
+            )
         }
         startProcess()
         try {
@@ -183,6 +208,7 @@ class ReusableShell(
                 }
             }
         } catch (e: Exception) {
+            e.printStackTrace()
             Log.e("commitCmdSync-Lock", e.toString())
             "error"
         } finally {

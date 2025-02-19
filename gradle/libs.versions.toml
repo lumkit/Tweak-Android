@@ -1,9 +1,9 @@
 [versions]
-agp = "8.7.3"
+agp = "8.8.1"
 android-compileSdk = "35"
-android-minSdk = "23"
+android-minSdk = "24"
 android-targetSdk = "35"
-androidx-activityCompose = "1.9.3"
+androidx-activityCompose = "1.10.0"
 androidx-appcompat = "1.7.0"
 androidx-constraintlayout = "2.2.0"
 androidx-core-ktx = "1.15.0"
@@ -20,6 +20,8 @@ ktor = "3.0.3"
 coil3 = "3.0.4"
 accompanist-systemuicontroller = "0.36.0"
 color-picker = "1.0.0"
+libsu-version = "6.0.0"
+shizuku-version = "13.1.5"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -48,6 +50,11 @@ coil-network-cache-control = { module = "io.coil-kt.coil3:coil-network-cache-con
 accompanist-systemuicontroller = { module = "com.google.accompanist:accompanist-systemuicontroller", version.ref = "accompanist-systemuicontroller" }
 color-picker = { module = "io.mhssn:colorpicker", version.ref = "color-picker" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+libsu-core = { module = "com.github.topjohnwu.libsu:core", version.ref = "libsu-version" }
+libsu-service = { module = "com.github.topjohnwu.libsu:service", version.ref = "libsu-version" }
+libsu-nio = { module = "com.github.topjohnwu.libsu:nio", version.ref = "libsu-version" }
+shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku-version" }
+shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku-version" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

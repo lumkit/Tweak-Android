@@ -32,7 +32,7 @@ import kotlinx.coroutines.withContext
 @SuppressLint("StaticFieldLeak")
 class OverviewViewModel(
     private val context: Context,
-): BaseViewModel() {
+) : BaseViewModel() {
 
     @Immutable
     data class MemoryBean(
@@ -179,8 +179,8 @@ class OverviewViewModel(
         val batteryCurrentNow = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
         val voltage = try {
             ReusableShells.execSync("cat /sys/class/power_supply/battery/voltage_now").firstLine().toFloat()
-        }catch (e: Exception) {
-            Float.NaN
+        }catch (_: Exception) {
+            -1f
         }
 
         _otherDetailState.value = OtherDetail(
@@ -202,7 +202,8 @@ class OverviewViewModel(
 
     suspend fun loadRunningServicesDetailState(): Unit = withContext(Dispatchers.IO) {
         if (processUtils.supported(context)) {
-            _runningServicesDetailState.value = processUtils.getAllProcess().sortedBy { it.cpu }.reversed()
+            _runningServicesDetailState.value =
+                processUtils.getAllProcess().sortedBy { it.cpu }.reversed()
         }
     }
 }

@@ -8,6 +8,8 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -64,8 +66,11 @@ import io.github.lumkit.tweak.data.UpdateEngineStatus
 import io.github.lumkit.tweak.model.Const
 import io.github.lumkit.tweak.ui.component.PlainTooltipBox
 import io.github.lumkit.tweak.ui.component.ScreenScaffold
+import io.github.lumkit.tweak.ui.component.SharedTransitionText
 import io.github.lumkit.tweak.ui.local.LocalStorageStore
+import io.github.lumkit.tweak.ui.screen.ScreenRoute
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @SuppressLint("DefaultLocale")
 @Composable
 fun VabUpdaterScreen(
@@ -85,9 +90,10 @@ fun VabUpdaterScreen(
     }
 
     ScreenScaffold(
+        sharedKey = ScreenRoute.VAB_UPDATE,
         title = {
-            Text(
-                text = stringResource(R.string.text_vab_updater)
+            SharedTransitionText(
+                text = stringResource(R.string.text_vab_updater),
             )
         }
     ) {
@@ -177,7 +183,9 @@ private fun InfoLayout() {
 
                     append("\n\n")
                     append(stringResource(R.string.text_ota_update_tips))
-                }, style = MaterialTheme.typography.bodyMedium
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.animateContentSize()
             )
         }
     }

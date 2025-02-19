@@ -2,7 +2,6 @@ package io.github.lumkit.tweak.ui.screen.main.page
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.drawable.Drawable
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
@@ -66,11 +65,11 @@ import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil3.asImage
-import coil3.compose.AsyncImage
 import io.github.lumkit.tweak.R
+import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.common.util.AppInfoLoader
 import io.github.lumkit.tweak.common.util.autoUnit
+import io.github.lumkit.tweak.data.RuntimeStatus
 import io.github.lumkit.tweak.model.Config
 import io.github.lumkit.tweak.model.ProcessInfo
 import io.github.lumkit.tweak.ui.component.CircleIndicator
@@ -353,36 +352,50 @@ private fun GpuCard(viewModel: OverviewViewModel) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            CircleIndicator(
-                circleDiameter = 90.dp,
-                backgroundIndicatorStrokeWidth = 12.dp,
-                progress = gpuBeanState.used
-            ) {
-                Text(
-                    text = "GPU",
-                    color = MaterialTheme.colorScheme.outline,
-                    style = MaterialTheme.typography.bodyMedium
-                )
+            if (TweakApplication.runtimeStatus == RuntimeStatus.Root) {
+                CircleIndicator(
+                    circleDiameter = 90.dp,
+                    backgroundIndicatorStrokeWidth = 12.dp,
+                    progress = gpuBeanState.used
+                ) {
+                    Text(
+                        text = "GPU",
+                        color = MaterialTheme.colorScheme.outline,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            } else if (TweakApplication.runtimeStatus == RuntimeStatus.Shizuku) {
+                when {
+                    gpuBeanState.describe.lowercase().contains("qualcomm") -> {
+
+                    }
+
+                    gpuBeanState.describe.lowercase().contains("arm") -> {
+
+                    }
+                }
             }
 
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                Text(
-                    text = "${gpuBeanState.currentFreq}MHz",
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                Text(
-                    text = String.format(
-                        "%s: %.0f%s",
-                        stringResource(R.string.text_load),
-                        gpuBeanState.used * 100f,
-                        "%"
-                    ),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
-                )
+                if (TweakApplication.runtimeStatus == RuntimeStatus.Root) {
+                    Text(
+                        text = "${gpuBeanState.currentFreq}MHz",
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Text(
+                        text = String.format(
+                            "%s: %.0f%s",
+                            stringResource(R.string.text_load),
+                            gpuBeanState.used * 100f,
+                            "%"
+                        ),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                }
                 PlainTooltipBox(
                     tooltip = {
                         Text(gpuBeanState.describe)
@@ -749,10 +762,14 @@ private fun OtherCard(viewModel: OverviewViewModel) {
                     text = {
                         Text(
                             text = String.format(
-                                "%d%s  %.2fv",
+                                "%d%s  %s",
                                 otherDetailState.batteryLevel,
                                 "%",
-                                otherDetailState.voltage
+                                if (otherDetailState.voltage < 0f) {
+                                    ""
+                                } else {
+                                    String.format("%.2fv", otherDetailState.voltage)
+                                }
                             ),
                             overflow = TextOverflow.Ellipsis,
                             softWrap = false

@@ -1,6 +1,7 @@
 package io.github.lumkit.tweak.model
 
 object Const {
+    const val APP_SHARED_RUNTIME_STATUS = "runtime_status"
     const val APP_AUTHORIZATION = "app_authorization"
     const val APP_AUTO_START_SERVICE: String = "app_auto_start_service"
     const val APP_OVERVIEW_TICK: String = "app_overview_tick"
@@ -12,7 +13,6 @@ object Const {
     const val APP_THEME_DYNAMIC_COLOR: String = "theme_dynamic_color"
     const val APP_DARK_MODE_STATE: String = "dark_mode_state"
     const val APP_SHARED_PREFERENCE_ID: String = "shared"
-    const val APP_WORK_STATUS = "app_work_status"
     const val APP_BATTERY_CURRENT_NOW_UNIT = "app_battery_current_now_unit"
     const val APP_IGNORE_VERSION = "app_ignore_version"
 
