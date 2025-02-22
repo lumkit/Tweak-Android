@@ -1,0 +1,11 @@
+libdir=/home/lumkit/my_work/all/openssl-3.3.0
+includedir=/home/lumkit/my_work/all/openssl-3.3.0/include
+enginesdir=/home/lumkit/my_work/all/openssl-3.3.0/engines
+modulesdir=/home/lumkit/my_work/all/openssl-3.3.0/providers
+
+Name: OpenSSL-libcrypto
+Description: OpenSSL cryptography library
+Version: 3.3.0
+Libs: -L${libdir} -lcrypto
+Libs.private: -ldl -pthread
+Cflags: -I${includedir}

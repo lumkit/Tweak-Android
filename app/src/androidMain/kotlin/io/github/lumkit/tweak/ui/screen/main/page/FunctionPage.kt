@@ -1,14 +1,11 @@
 package io.github.lumkit.tweak.ui.screen.main.page
 
 import android.content.Context
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -20,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -53,9 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import io.github.lumkit.tweak.LocalAnimateContentScope
 import io.github.lumkit.tweak.LocalScreenNavigationController
-import io.github.lumkit.tweak.LocalSharedTransitionScope
 import io.github.lumkit.tweak.R
 import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.ui.screen.ScreenRoute
@@ -170,16 +164,7 @@ private fun BoxScope.Search(
                         .clickable(enabled = enabled) {
                             viewModel.setSearchText("")
                             expanded = false
-                            navHostController.navigate(it.route) {
-                                popUpTo(
-                                    navHostController.currentBackStackEntry?.destination?.route
-                                        ?: ScreenRoute.MAIN
-                                ) {
-                                    saveState = true
-                                }
-                                restoreState = true
-                                launchSingleTop = true
-                            }
+                            navHostController.navToModule(it)
                         }
                         .alpha(
                             alpha = if (enabled) {
@@ -241,15 +226,11 @@ private fun Plates(viewModel: FunctionPageViewModel, navHostController: NavHostC
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
 private fun PlateItem(
     funPlate: FunctionPageViewModel.FunPlate,
     navHostController: NavHostController
 ) {
-    val sharedTransitionScope = LocalSharedTransitionScope.current
-    val animatedContentScope = LocalAnimateContentScope.current
-
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -266,63 +247,44 @@ private fun PlateItem(
             maxItemsInEachRow = 2
         ) {
             funPlate.modules.forEach {
-                sharedTransitionScope.run {
-                    val enabled = TweakApplication.runtimeStatus >= it.runtimeStatus
-                    OutlinedCard(
+                val enabled = TweakApplication.runtimeStatus >= it.runtimeStatus
+                OutlinedCard(
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        navHostController.navToModule(it)
+                    },
+                    enabled = enabled,
+                ) {
+                    Row(
                         modifier = Modifier
-                            .sharedBounds(
-                                sharedContentState = rememberSharedContentState("${it.route}-box"),
-                                animatedVisibilityScope = animatedContentScope,
-                            ).weight(1f),
-                        onClick = {
-                            navHostController.navigate(it.route) {
-                                popUpTo(ScreenRoute.MAIN) {
-                                    saveState = true
-                                }
-                                restoreState = true
-                            }
-                        },
-                        enabled = enabled,
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp, horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 12.dp, horizontal = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        Surface(
+                            modifier = Modifier.size(16.dp),
+                            contentColor = MaterialTheme.colorScheme.outline,
+                            color = Color.Transparent
                         ) {
-                            Surface(
-                                modifier = Modifier.size(16.dp),
-                                contentColor = MaterialTheme.colorScheme.outline,
-                                color = Color.Transparent
-                            ) {
 
-                                Icon(
-                                    painter = painterResource(it.icon),
-                                    contentDescription = null,
-                                    modifier = Modifier.sharedBounds(
-                                        sharedContentState = rememberSharedContentState("${it.route}-icon"),
-                                        animatedVisibilityScope = animatedContentScope
-                                    )
-                                )
-                            }
-                            Column {
-                                Text(
-                                    text = it.title,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    overflow = TextOverflow.Ellipsis,
-                                    softWrap = false,
-                                    textDecoration = if (enabled) {
-                                        TextDecoration.None
-                                    } else {
-                                        TextDecoration.LineThrough
-                                    },
-                                    modifier = Modifier.sharedBounds(
-                                        sharedContentState = rememberSharedContentState("${it.route}-title"),
-                                        animatedVisibilityScope = animatedContentScope
-                                    )
-                                )
-                            }
+                            Icon(
+                                painter = painterResource(it.icon),
+                                contentDescription = null,
+                            )
+                        }
+                        Column {
+                            Text(
+                                text = it.title,
+                                style = MaterialTheme.typography.labelMedium,
+                                overflow = TextOverflow.Ellipsis,
+                                softWrap = false,
+                                textDecoration = if (enabled) {
+                                    TextDecoration.None
+                                } else {
+                                    TextDecoration.LineThrough
+                                },
+                            )
                         }
                     }
                 }
@@ -332,4 +294,30 @@ private fun PlateItem(
             }
         }
     }
+}
+
+fun NavHostController.navToModule(
+    module: FunctionPageViewModel.FunModule
+) {
+    navigate(
+        buildString {
+//            if (module.route.startsWith(ScreenRoute.VAB_UPDATE)) {
+//                append(module.route.replace("{sharedKey}", ScreenRoute.VAB_UPDATE))
+//            } else {
+//                append(module.route)
+//            }
+            append(module.route)
+        }
+    ) {
+        popUpTo(ScreenRoute.MAIN) {
+            saveState = true
+        }
+        restoreState = true
+    }
+}
+
+fun String.sharedLabel(): String = if (contains("{")) {
+    substring(0, lastIndexOf("{") - 1)
+} else {
+    this
 }

@@ -37,11 +37,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,7 +54,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import io.github.lumkit.tweak.LocalScreenNavigationController
 import io.github.lumkit.tweak.R
 import io.github.lumkit.tweak.TweakApplication
@@ -66,6 +67,7 @@ import io.github.lumkit.tweak.ui.component.FolderItem
 import io.github.lumkit.tweak.ui.local.LocalStorageStore
 import io.github.lumkit.tweak.ui.local.StorageStore
 import io.github.lumkit.tweak.ui.screen.ScreenRoute
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -82,9 +84,12 @@ fun RuntimeModeScreen(
         )
     }
 ) {
+    val ioScope = rememberCoroutineScope { Dispatchers.IO }
+
     // 第二次初始化，切换为su或shizuku
-    LaunchedEffect(TweakApplication.runtimeStatus) {
-        if (storageStore.getBoolean(Const.APP_ACCEPT_RISK)) {
+    SideEffect {
+        if (storageStore.getBoolean(Const.APP_SHARED_RUNTIME_MODE_STATE)) {
+
             when (TweakApplication.runtimeStatus) {
                 RuntimeStatus.Normal -> {
                     // TODO 默认初始化 权限检查
@@ -136,13 +141,17 @@ fun RuntimeModeScreen(
                 color = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.size(16.dp))
-            FolderItems(viewModel, storageStore)
+            FolderItems(viewModel, storageStore, ioScope)
         }
     }
 }
 
 @Composable
-private fun FolderItems(viewModel: RuntimeModeViewModel, storageStore: StorageStore) {
+private fun FolderItems(
+    viewModel: RuntimeModeViewModel,
+    storageStore: StorageStore,
+    ioScope: CoroutineScope
+) {
 
     val activity = LocalActivity.current as ComponentActivity
 
@@ -277,16 +286,17 @@ private fun FolderItems(viewModel: RuntimeModeViewModel, storageStore: StorageSt
 //        )
     }
 
-    UseProtocolForRootDialog(viewModel, activity, storageStore)
-    UseProtocolForShizukuDialog(viewModel, activity, storageStore)
-    CheckPermissionsDialog(viewModel, activity, storageStore)
+    UseProtocolForRootDialog(viewModel, activity, storageStore, ioScope)
+    UseProtocolForShizukuDialog(viewModel, activity, storageStore, ioScope)
+    CheckPermissionsDialog(viewModel, activity, storageStore, ioScope)
 }
 
 @Composable
 private fun UseProtocolForRootDialog(
     viewModel: RuntimeModeViewModel,
     activity: ComponentActivity,
-    storageStore: StorageStore
+    storageStore: StorageStore,
+    ioScope: CoroutineScope
 ) {
     val rootModeDialogState by viewModel.rootModeDialogState.collectAsStateWithLifecycle()
 
@@ -358,7 +368,12 @@ private fun UseProtocolForRootDialog(
                         trailingIcon = {
                             Switch(
                                 checked = acceptRisk,
-                                onCheckedChange = { acceptRisk = it }
+                                onCheckedChange = {
+                                    acceptRisk = it
+                                    ioScope.launch {
+                                        storageStore.putBoolean(Const.APP_ACCEPT_RISK, it)
+                                    }
+                                }
                             )
                         }
                     )
@@ -401,7 +416,8 @@ private fun UseProtocolForRootDialog(
 private fun UseProtocolForShizukuDialog(
     viewModel: RuntimeModeViewModel,
     activity: ComponentActivity,
-    storageStore: StorageStore
+    storageStore: StorageStore,
+    ioScope: CoroutineScope
 ) {
     val shizukuDialogState by viewModel.shizukuModeDialogState.collectAsStateWithLifecycle()
 
@@ -473,7 +489,12 @@ private fun UseProtocolForShizukuDialog(
                         trailingIcon = {
                             Switch(
                                 checked = acceptRisk,
-                                onCheckedChange = { acceptRisk = it }
+                                onCheckedChange = {
+                                    acceptRisk = it
+                                    ioScope.launch {
+                                        storageStore.putBoolean(Const.APP_ACCEPT_RISK, it)
+                                    }
+                                }
                             )
                         }
                     )
@@ -516,9 +537,9 @@ private fun UseProtocolForShizukuDialog(
 private fun CheckPermissionsDialog(
     viewModel: RuntimeModeViewModel,
     activity: ComponentActivity,
-    storageStore: StorageStore
+    storageStore: StorageStore,
+    ioScope: CoroutineScope
 ) {
-    val ioScope = rememberCoroutineScope { Dispatchers.IO }
     val initConfigDialogState by viewModel.initConfigDialogState.collectAsStateWithLifecycle()
     val initConfigDialogMessage by viewModel.initConfigDialogMessage.collectAsStateWithLifecycle()
     val permissionState by viewModel.permissionState.collectAsStateWithLifecycle()
@@ -552,9 +573,10 @@ private fun CheckPermissionsDialog(
 
                         RuntimeModeViewModel.PermissionState.Success -> {
                             LaunchedEffect(Unit) {
-                                viewModel.setInitConfigDialogState(false)
+                                viewModel.finish()
+
                                 navHostController.navigate(ScreenRoute.MAIN) {
-                                    popUpTo(navHostController.graph.findStartDestination().id) {
+                                    popUpTo(ScreenRoute.RUNTIME_MODE) {
                                         inclusive = true
                                     }
                                 }
@@ -609,6 +631,7 @@ private fun CheckPermissionsDialog(
                                             expanded = expanded,
                                             onDismissRequest = { expanded = false }
                                         ) {
+                                            var enabled by rememberSaveable { mutableStateOf(true) }
                                             Config.ROOT_USERS.forEach { id ->
                                                 DropdownMenuItem(
                                                     leadingIcon = {
@@ -620,12 +643,15 @@ private fun CheckPermissionsDialog(
                                                     text = {
                                                         Text(text = id)
                                                     },
+                                                    enabled = enabled,
                                                     onClick = {
+                                                        enabled = false
                                                         ioScope.launch {
                                                             userId = id
                                                             // 切换所有用户
                                                             ReusableShells.changeUserIdAtAll(id)
                                                             expanded = false
+                                                            enabled = true
                                                         }
                                                     },
                                                 )

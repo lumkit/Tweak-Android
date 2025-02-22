@@ -6,6 +6,8 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.navigation.NamedNavArgument
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDeepLink
 import androidx.navigation.navDeepLink
 import io.github.lumkit.tweak.R
@@ -35,10 +37,11 @@ class FunctionPageViewModel(
         @DrawableRes val icon: Int,
         val title: String,
         val runtimeStatus: RuntimeStatus,
-        val id: String,
         val route: String,
+        val id: String = route,
         @Transient val deepLinks: List<NavDeepLink> = emptyList(),
-        @Transient val screen: @Composable () -> Unit
+        @Transient val arguments: List<NamedNavArgument> = emptyList(),
+        @Transient val screen: @Composable (NavBackStackEntry) -> Unit
     ) : Serializable
 
     private val _plateState = MutableStateFlow<List<FunPlate>>(emptyList())
@@ -66,15 +69,18 @@ class FunctionPageViewModel(
                         icon = R.drawable.ic_update,
                         title = context.getString(R.string.text_vab_updater),
                         runtimeStatus = RuntimeStatus.Root,
-                        id = ScreenRoute.VAB_UPDATE,
                         route = ScreenRoute.VAB_UPDATE,
                         screen = {
                             VabUpdaterScreen()
                         },
+                        arguments = listOf(),
                         deepLinks = listOf(
                             navDeepLink {
-                                uriPattern =
-                                    "${Const.Navigation.DEEP_LINE}/${ScreenRoute.VAB_UPDATE}"
+                                uriPattern = buildString {
+                                    append(
+                                        "${Const.Navigation.DEEP_LINE}/${ScreenRoute.VAB_UPDATE}"
+                                    )
+                                }
                             }
                         )
                     ),
@@ -82,11 +88,12 @@ class FunctionPageViewModel(
                         icon = R.drawable.ic_smart_notice,
                         title = context.getString(R.string.text_smart_notice),
                         runtimeStatus = RuntimeStatus.Normal,
-                        id = ScreenRoute.SMART_NOTICE,
                         route = ScreenRoute.SMART_NOTICE,
                         screen = {
                             SmartNoticeScreen()
-                        }
+                        },
+                        arguments = listOf(),
+                        deepLinks = listOf(),
                     ),
                 )
             )

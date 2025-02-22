@@ -1,0 +1,497 @@
+libcurl_la-rand.lo: rand.c ../lib/curl_setup.h ../lib/curl_config.h \
+  ../include/curl/system.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/sys/types.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.6/include/stddef.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.6/include/__stddef_max_align_t.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.6/include/stdint.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/stdint.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/wchar_limits.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/sys/cdefs.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/android/versioning.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/android/api-level.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/get_device_api_level_inlines.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/android/ndk-version.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/types.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/types.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/asm-generic/types.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/asm-generic/int-ll64.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/bitsperlong.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/asm-generic/bitsperlong.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/posix_types.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/stddef.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/compiler_types.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/compiler.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/posix_types.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/posix_types_64.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/asm-generic/posix_types.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/pthread_types.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/sys/socket.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/fcntl.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/asm-generic/fcntl.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/flock64.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/flock.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/socket.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/asm-generic/socket.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/sockios.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/asm-generic/sockios.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/sockios.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/uio.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/sa_family_t.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/stdio.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.6/include/stdarg.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/seek_constants.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/struct_file.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/assert.h \
+  ../lib/curl_setup_once.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/local/include/stdlib.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/stdlib.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/alloca.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/wait.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/wait.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/malloc.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/xlocale.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/android/legacy_stdlib_inlines.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/string.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/strcasecmp.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/time.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/sys/time.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/time.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/time_types.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/sys/select.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/signal.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/sigcontext.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/signal_types.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.6/include/limits.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/limits.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.6/include/float.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/limits.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/posix_limits.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/signal.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/signal.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/asm-generic/signal-defs.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/siginfo.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/asm-generic/siginfo.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/timespec.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/sys/ucontext.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/sys/user.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/android/legacy_signal_inlines.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/errno.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/errno.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/errno.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/asm-generic/errno.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/asm-generic/errno-base.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/android/legacy_errno_inlines.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/sys/stat.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/stat.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/android/legacy_sys_stat_inlines.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.6/include/stdbool.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/unistd.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/fcntl.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/getopt.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/ioctl.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/lockf.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/sysconf.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/android/legacy_unistd_inlines.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/swab.h \
+  ../lib/functypes.h ../lib/curl_ctype.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/fcntl.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/fadvise.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/falloc.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/fcntl.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/openat2.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/arpa/inet.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/netinet/in.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/endian.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/sys/endian.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/netinet/in6.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/in6.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/libc-compat.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/socket.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/in.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/ip_msfilter.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/in_addr.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/ip_mreq_source.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/byteorder.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/byteorder/little_endian.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/swab.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/swab.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/ipv6.h \
+  ../include/curl/curl.h ../include/curl/curlver.h \
+  ../include/curl/easy.h ../include/curl/multi.h \
+  ../include/curl/urlapi.h ../include/curl/options.h \
+  ../include/curl/header.h ../include/curl/websockets.h \
+  ../include/curl/mprintf.h ../lib/urldata.h ../lib/cookie.h \
+  ../lib/psl.h ../lib/formdata.h ../lib/timeval.h ../lib/timediff.h \
+  ../lib/http_chunks.h ../lib/dynbuf.h ../lib/hostip.h ../lib/hash.h \
+  ../lib/llist.h ../lib/curl_addrinfo.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/netdb.h \
+  ../lib/asyn.h \
+  /home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/setjmp.h \
+  ../lib/splay.h ../lib/dynhds.h ../lib/request.h ../lib/bufq.h \
+  ../lib/mime.h ../lib/imap.h ../lib/pingpong.h ../lib/curl_sasl.h \
+  ../lib/bufref.h ../lib/pop3.h ../lib/smtp.h ../lib/ftp.h ../lib/file.h \
+  ../lib/vssh/ssh.h ../lib/http.h ../lib/ws.h ../lib/rtsp.h ../lib/smb.h \
+  ../lib/mqtt.h ../lib/ftplistparser.h ../lib/multihandle.h \
+  ../lib/conncache.h ../lib/socketpair.h ../lib/c-hyper.h \
+  ../lib/cf-socket.h ../lib/nonblock.h ../lib/sockaddr.h \
+  ../lib/vtls/vtls.h ../lib/sendf.h ../lib/curl_trc.h ../lib/rand.h \
+  ../lib/escape.h ../lib/curl_printf.h ../lib/curl_memory.h \
+  ../lib/memdebug.h
+
+../lib/curl_setup.h:
+
+../lib/curl_config.h:
+
+../include/curl/system.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/sys/types.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.6/include/stddef.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.6/include/__stddef_max_align_t.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.6/include/stdint.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/stdint.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/wchar_limits.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/sys/cdefs.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/android/versioning.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/android/api-level.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/get_device_api_level_inlines.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/android/ndk-version.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/types.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/types.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/asm-generic/types.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/asm-generic/int-ll64.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/bitsperlong.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/asm-generic/bitsperlong.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/posix_types.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/stddef.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/compiler_types.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/compiler.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/posix_types.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/posix_types_64.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/asm-generic/posix_types.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/pthread_types.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/sys/socket.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/fcntl.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/asm-generic/fcntl.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/flock64.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/flock.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/socket.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/asm-generic/socket.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/sockios.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/asm-generic/sockios.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/sockios.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/uio.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/sa_family_t.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/stdio.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.6/include/stdarg.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/seek_constants.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/struct_file.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/assert.h:
+
+../lib/curl_setup_once.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/local/include/stdlib.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/stdlib.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/alloca.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/wait.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/wait.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/malloc.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/xlocale.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/android/legacy_stdlib_inlines.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/string.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/strcasecmp.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/time.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/sys/time.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/time.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/time_types.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/sys/select.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/signal.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/sigcontext.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/signal_types.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.6/include/limits.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/limits.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.6/include/float.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/limits.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/posix_limits.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/signal.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/signal.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/asm-generic/signal-defs.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/siginfo.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/asm-generic/siginfo.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/timespec.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/sys/ucontext.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/sys/user.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/android/legacy_signal_inlines.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/errno.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/errno.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/errno.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/asm-generic/errno.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/asm-generic/errno-base.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/android/legacy_errno_inlines.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/sys/stat.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/stat.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/android/legacy_sys_stat_inlines.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/14.0.6/include/stdbool.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/unistd.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/fcntl.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/getopt.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/ioctl.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/lockf.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/sysconf.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/android/legacy_unistd_inlines.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/swab.h:
+
+../lib/functypes.h:
+
+../lib/curl_ctype.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/fcntl.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/fadvise.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/falloc.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/fcntl.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/openat2.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/arpa/inet.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/netinet/in.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/endian.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/sys/endian.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/netinet/in6.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/in6.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/libc-compat.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/socket.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/in.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/ip_msfilter.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/in_addr.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/bits/ip_mreq_source.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/byteorder.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/byteorder/little_endian.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/swab.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/x86_64-linux-android/asm/swab.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/linux/ipv6.h:
+
+../include/curl/curl.h:
+
+../include/curl/curlver.h:
+
+../include/curl/easy.h:
+
+../include/curl/multi.h:
+
+../include/curl/urlapi.h:
+
+../include/curl/options.h:
+
+../include/curl/header.h:
+
+../include/curl/websockets.h:
+
+../include/curl/mprintf.h:
+
+../lib/urldata.h:
+
+../lib/cookie.h:
+
+../lib/psl.h:
+
+../lib/formdata.h:
+
+../lib/timeval.h:
+
+../lib/timediff.h:
+
+../lib/http_chunks.h:
+
+../lib/dynbuf.h:
+
+../lib/hostip.h:
+
+../lib/hash.h:
+
+../lib/llist.h:
+
+../lib/curl_addrinfo.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/netdb.h:
+
+../lib/asyn.h:
+
+/home/lumkit/android-ndk/android-ndk-r25b/toolchains/llvm/prebuilt/linux-x86_64/bin/../sysroot/usr/include/setjmp.h:
+
+../lib/splay.h:
+
+../lib/dynhds.h:
+
+../lib/request.h:
+
+../lib/bufq.h:
+
+../lib/mime.h:
+
+../lib/imap.h:
+
+../lib/pingpong.h:
+
+../lib/curl_sasl.h:
+
+../lib/bufref.h:
+
+../lib/pop3.h:
+
+../lib/smtp.h:
+
+../lib/ftp.h:
+
+../lib/file.h:
+
+../lib/vssh/ssh.h:
+
+../lib/http.h:
+
+../lib/ws.h:
+
+../lib/rtsp.h:
+
+../lib/smb.h:
+
+../lib/mqtt.h:
+
+../lib/ftplistparser.h:
+
+../lib/multihandle.h:
+
+../lib/conncache.h:
+
+../lib/socketpair.h:
+
+../lib/c-hyper.h:
+
+../lib/cf-socket.h:
+
+../lib/nonblock.h:
+
+../lib/sockaddr.h:
+
+../lib/vtls/vtls.h:
+
+../lib/sendf.h:
+
+../lib/curl_trc.h:
+
+../lib/rand.h:
+
+../lib/escape.h:
+
+../lib/curl_printf.h:
+
+../lib/curl_memory.h:
+
+../lib/memdebug.h:

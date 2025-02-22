@@ -37,7 +37,6 @@ fun OpenSourceScreen(
     val licenseState by viewModel.licenseState.collectAsStateWithLifecycle()
 
     ScreenScaffold(
-        sharedKey = ScreenRoute.OPEN_SOURCE,
         title = {
             SharedTransitionText(
                 text = stringResource(R.string.text_open_sources)

@@ -1,10 +1,10 @@
 package io.github.lumkit.tweak.common.shell.provide
 
+import androidx.core.content.edit
 import io.github.lumkit.tweak.TweakApplication
+import io.github.lumkit.tweak.data.RuntimeStatus
 import io.github.lumkit.tweak.model.Const
 import java.util.concurrent.ConcurrentHashMap
-import androidx.core.content.edit
-import io.github.lumkit.tweak.data.RuntimeStatus
 
 object ReusableShells {
     private val shells = ConcurrentHashMap<String, ReusableShell>()
@@ -23,7 +23,6 @@ object ReusableShells {
         return shell
     }
 
-    @Synchronized
     fun destroyInstance(key: String) {
         if (!shells.containsKey(key)) {
             return
@@ -40,7 +39,9 @@ object ReusableShells {
 
     fun destroyAll() {
         shells.onEach {
-            it.value.tryExit()
+            // 跳过更新引擎进程
+            if (it.key != "update_engine_client")
+                it.value.tryExit()
         }
         shells.clear()
     }

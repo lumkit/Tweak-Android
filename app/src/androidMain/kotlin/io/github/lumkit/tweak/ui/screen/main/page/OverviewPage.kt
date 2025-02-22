@@ -9,7 +9,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.FlowRowScope
 import androidx.compose.foundation.layout.Row
@@ -620,7 +619,6 @@ private fun RowScope.CpuTotalBar(viewModel: OverviewViewModel) {
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun CpuLoadBar(viewModel: OverviewViewModel) {
 
@@ -658,13 +656,12 @@ private fun CpuLoadBar(viewModel: OverviewViewModel) {
 }
 
 @SuppressLint("DefaultLocale")
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun FlowRowScope.CoreItem(coreDetail: OverviewViewModel.CoreDetail) {
     Column(
         modifier = Modifier
             .weight(1f)
-            .height(65.dp),
+            .height(75.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
@@ -702,7 +699,6 @@ private fun FlowRowScope.CoreItem(coreDetail: OverviewViewModel.CoreDetail) {
             fontSize = 8.sp,
             lineHeight = 8.sp
         )
-        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 

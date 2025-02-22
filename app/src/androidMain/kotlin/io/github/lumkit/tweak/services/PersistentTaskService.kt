@@ -12,6 +12,7 @@ import android.os.IBinder
 import androidx.annotation.StringRes
 import androidx.core.app.NotificationCompat
 import androidx.core.net.toUri
+import io.github.lumkit.tweak.MainActivity
 import io.github.lumkit.tweak.R
 import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.common.shell.module.UpdateEngineClient
@@ -103,14 +104,17 @@ class PersistentTaskService : Service() {
                 val resStatus = intent.getIntExtra("res", R.string.text_status_idle)
 
                 val deepLinkUri = "${Const.Navigation.DEEP_LINE}/${ScreenRoute.VAB_UPDATE}".toUri()
-                val deepLinkIntent = Intent(Intent.ACTION_VIEW, deepLinkUri).apply {
+                val startIntent = Intent(Intent.ACTION_VIEW, deepLinkUri).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
+//                val startIntent = Intent(this, MainActivity::class.java).apply {
+//                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+//                }
 
                 val pendingIntent = PendingIntent.getActivity(
                     this,
                     0,
-                    deepLinkIntent,
+                    startIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
 

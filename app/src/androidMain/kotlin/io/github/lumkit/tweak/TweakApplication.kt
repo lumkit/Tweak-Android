@@ -14,7 +14,7 @@ import io.github.lumkit.tweak.ui.local.StorageStore
 import io.github.lumkit.tweak.ui.screen.runtime.RuntimeModeViewModel
 import rikka.shizuku.Shizuku
 
-class TweakApplication: Application() {
+class TweakApplication : Application() {
 
     companion object {
         lateinit var application: Application
@@ -48,27 +48,35 @@ class TweakApplication: Application() {
         )
 
         setRuntimeStatusState(
-            RuntimeStatus.entries[shared.getInt(Const.APP_SHARED_RUNTIME_STATUS, RuntimeStatus.Normal.ordinal)]
+            RuntimeStatus.entries[shared.getInt(
+                Const.APP_SHARED_RUNTIME_STATUS,
+                RuntimeStatus.Normal.ordinal
+            )]
         )
 
-        if (storageStore.getBoolean(Const.APP_ACCEPT_RISK)) {
+        if (storageStore.getBoolean(Const.APP_SHARED_RUNTIME_MODE_STATE)) {
             when (runtimeStatus) {
                 RuntimeStatus.Normal -> {
 
                 }
+
                 RuntimeStatus.Shizuku -> {
                     runtimeModeViewModel.installBusybox()
 
                     Shizuku.addBinderDeadListener {
-                        Toast.makeText(this, R.string.text_shizuku_service_is_nonactivated, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            this,
+                            R.string.text_shizuku_service_is_nonactivated,
+                            Toast.LENGTH_SHORT
+                        ).show()
                         Process.killProcess(Process.myPid())
                     }
                 }
+
                 RuntimeStatus.Root -> {
                     runtimeModeViewModel.installBusybox()
                 }
             }
         }
     }
-
 }

@@ -11,6 +11,8 @@ cmake_minimum_required(VERSION 3.22.1)
 # build script scope).
 project("tweak-native")
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions -frtti")
+
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
@@ -26,7 +28,8 @@ project("tweak-native")
 # used in the AndroidManifest.xml file.
 add_library(${CMAKE_PROJECT_NAME} SHARED
         # List C/C++ source files with relative paths to this CMakeLists.txt.
-        tweak-libs.cpp)
+        tweak-libs.cpp
+)
 
 # Specifies libraries CMake should link to your target library. You
 # can link libraries from various origins, such as libraries defined in this
@@ -35,3 +38,33 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
         # List libraries link to the target library
         android
         log)
+
+# 设置 OpenSSL、cURL 和 zlib 的包含路径和库路径
+include_directories(
+        ${CMAKE_SOURCE_DIR}/openssl/include
+        ${CMAKE_SOURCE_DIR}/curl/include
+        ${CMAKE_SOURCE_DIR}/zlib/include
+)
+
+# 添加 OpenSSL、cURL 和 zlib 的静态库
+add_library(libssl STATIC IMPORTED)
+set_target_properties(libssl PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/openssl/${ANDROID_ABI}/lib/libssl.a)
+
+add_library(libcrypto STATIC IMPORTED)
+set_target_properties(libcrypto PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/openssl/${ANDROID_ABI}/lib/libcrypto.a)
+
+add_library(libcurl STATIC IMPORTED)
+set_target_properties(libcurl PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/curl/${ANDROID_ABI}/lib/libcurl.a)
+
+add_library(libz STATIC IMPORTED)
+set_target_properties(libz PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/zlib/${ANDROID_ABI}/lib/libz.a)
+
+# 链接外部库到你的本地库
+target_link_libraries(${CMAKE_PROJECT_NAME}
+        android
+        log
+        libssl
+        libcrypto
+        libcurl
+        libz
+)

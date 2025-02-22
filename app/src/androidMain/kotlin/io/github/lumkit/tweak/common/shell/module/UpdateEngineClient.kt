@@ -76,8 +76,11 @@ class UpdateEngineClient {
         }
     }
 
-    private val reusableShell =
-        ReusableShells.getInstance("update_engine_client", redirectErrorStream = true, status = TweakApplication.runtimeStatus)
+    private val reusableShell = ReusableShells.getInstance(
+        "update_engine_client",
+        redirectErrorStream = true,
+        status = TweakApplication.runtimeStatus
+    )
     private val updateEngineCoroutine = CoroutineScope(Dispatchers.IO)
     private val updateEnginClientFile = RootFile("/system/bin/update_engine_client")
 

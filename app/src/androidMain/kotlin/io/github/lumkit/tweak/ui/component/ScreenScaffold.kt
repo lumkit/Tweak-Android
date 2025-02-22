@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import io.github.lumkit.tweak.LocalAnimateContentScope
 import io.github.lumkit.tweak.LocalScreenNavigationController
@@ -52,9 +53,10 @@ fun ScreenScaffold(
             Icon(
                 painter = painterResource(R.drawable.ic_nav_back),
                 contentDescription = null,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier
+                    .size(24.dp)
                     .then(
-                        if (sharedKey == null) {
+                        if (sharedKey.isNullOrBlank()) {
                             Modifier
                         } else {
                             sharedTransitionScope.run {
@@ -72,11 +74,11 @@ fun ScreenScaffold(
     actions: @Composable RowScope.() -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
-    sharedTransitionScope.run {
+    with(sharedTransitionScope) {
         Scaffold(
             modifier = modifier
                 .then(
-                    if (sharedKey == null) {
+                    if (sharedKey.isNullOrBlank()) {
                         Modifier
                     } else {
                         Modifier.sharedBounds(
@@ -124,13 +126,12 @@ fun String?.SharedTransitionText(
     onTextLayout: ((TextLayoutResult) -> Unit)? = null,
     style: TextStyle = LocalTextStyle.current
 ) {
-    val sharedTransitionScope = LocalSharedTransitionScope.current
     val animatedContentScope = LocalAnimateContentScope.current
-    sharedTransitionScope.run {
+    with(LocalSharedTransitionScope.current) {
         Text(
             text,
             modifier.then(
-                if (this@SharedTransitionText == null) {
+                if (this@SharedTransitionText.isNullOrBlank()) {
                     Modifier
                 } else {
                     Modifier.sharedBounds(
@@ -157,3 +158,6 @@ fun String?.SharedTransitionText(
         )
     }
 }
+
+@Composable
+fun NavBackStackEntry.asSharedKey(): String? = this.arguments?.getString("sharedKey")

@@ -5,12 +5,14 @@ import io.github.lumkit.tweak.data.RuntimeStatus
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.datetime.Clock
 import java.io.BufferedReader
 import java.io.BufferedWriter
@@ -83,19 +85,28 @@ class ReusableShell(
 
     fun tryExit() {
         try {
-            writer?.close()
-            writer = null
-        } catch (_: Exception) {
-        }
-        try {
             reader?.close()
             reader = null
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        try {
+            writer?.close()
+            writer = null
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
         try {
             process?.destroy()
             process = null
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        try {
+            listenerPool.clear()
+            coroutineScope.cancel()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
         currentIsIdle = true
     }
@@ -106,7 +117,7 @@ class ReusableShell(
     private suspend fun startProcess() {
         if (process != null) return
         withTimeout(10_000) {
-            mutex.withLock {
+            mutex.withLock<Unit> {
                 enterLockTime = Clock.System.now().toEpochMilliseconds()
                 try {
                     val process = when (status) {
@@ -133,7 +144,7 @@ class ReusableShell(
                         }
                     }
 
-                    CoroutineScope(Dispatchers.IO).launch(
+                    coroutineScope.launch(
                         CoroutineExceptionHandler { _, throwable ->
                             Log.e("ErrorReader", throwable.message ?: "Error reading error stream")
                         }

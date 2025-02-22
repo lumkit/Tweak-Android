@@ -205,7 +205,7 @@ fun LoginDialog(
                     onClick = {
                         when (pageState) {
                             LoginViewModel.LoginPageState.LOGIN -> {
-                                if (!FieldValidatorUtil.usernameValid(username)) {
+                                if (!FieldValidatorUtil.usernameValid(username) && !FieldValidatorUtil.emailValid(username)) {
                                     Toast.makeText(context, R.string.text_id_check_fail, Toast.LENGTH_SHORT).show()
                                 } else if (!FieldValidatorUtil.passwordValid(password)) {
                                     Toast.makeText(context, R.string.text_password_check_fail, Toast.LENGTH_SHORT).show()

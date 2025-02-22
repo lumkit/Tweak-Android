@@ -9,6 +9,7 @@ import android.provider.Settings
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.core.app.ActivityCompat
+import androidx.lifecycle.viewModelScope
 import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.common.BaseViewModel
 import io.github.lumkit.tweak.common.permissions.checkPermission
@@ -22,6 +23,7 @@ import io.github.lumkit.tweak.model.Const
 import io.github.lumkit.tweak.ui.local.StorageStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import rikka.shizuku.Shizuku
 import java.io.File
 
@@ -65,18 +67,17 @@ class RuntimeModeViewModel(
         error: (Throwable) -> Unit,
     ) = suspendLaunch(
         id = "initRootModeConfig",
-        onError = { error(it) }
+        onError = {
+            it.printStackTrace()
+            viewModelScope.launch { error(it) }
+        }
     ) {
         loading()
 
         TweakApplication.setRuntimeStatusState(RuntimeStatus.Root)
 
-        ReusableShells.destroyAll()
-
         installBusybox()
         checkNecessaryPermissionsForRoot()
-
-        storageStore.putBoolean(Const.APP_ACCEPT_RISK, true)
 
         success("初始化成功")
     }
@@ -89,19 +90,16 @@ class RuntimeModeViewModel(
     ) = suspendLaunch(
         id = "initShizukuModeConfig",
         onError = {
-            error(it)
+            it.printStackTrace()
+            viewModelScope.launch { error(it) }
         }
     ) {
         loading()
 
         TweakApplication.setRuntimeStatusState(RuntimeStatus.Shizuku)
 
-        ReusableShells.destroyAll()
-
         installBusybox()
         checkNecessaryPermissionsForShizuku()
-
-        storageStore.putBoolean(Const.APP_ACCEPT_RISK, true)
 
         success("初始化成功！")
     }
@@ -170,6 +168,8 @@ class RuntimeModeViewModel(
             }
         }
 
+        ReusableShells.destroyAll()
+
         val result = ReusableShells.execSync("sh ${scriptFile.absolutePath} ${binDir.absolutePath} & echo 'success'")
 
         Log.d("Install Busybox", result)
@@ -207,7 +207,7 @@ class RuntimeModeViewModel(
     }
 
     private suspend fun checkNecessaryPermissionsForShizuku() {
-        _rootModeDialogState.value = false
+        _shizukuModeDialogState.value = false
         _initConfigDialogState.value = true
         _initConfigDialogMessage.value = "开始检查Shizuku权限..."
         _permissionState.value = PermissionState.Request
@@ -240,7 +240,8 @@ class RuntimeModeViewModel(
             }
         }
 
-        ReusableShells.tryExit()
+        ReusableShells.destroyAll()
+
         val result = ReusableShells.execSync("sh ${scriptFile.absolutePath} ${binDir.absolutePath} & echo 'success'")
 
         Log.d("Install Busybox", result)
@@ -331,5 +332,12 @@ class RuntimeModeViewModel(
 
         val result = ReusableShells.execSync(stringBuilder.toString())
         Log.d("grantPermission", result)
+    }
+
+    fun finish() {
+        setInitConfigDialogState(false)
+        setRootModeDialogState(false)
+        setShizukuModeDialogState(false)
+        _permissionState.value = PermissionState.Request
     }
 }

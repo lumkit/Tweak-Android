@@ -13,7 +13,6 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -68,7 +67,8 @@ import io.github.lumkit.tweak.ui.component.PlainTooltipBox
 import io.github.lumkit.tweak.ui.component.ScreenScaffold
 import io.github.lumkit.tweak.ui.component.SharedTransitionText
 import io.github.lumkit.tweak.ui.local.LocalStorageStore
-import io.github.lumkit.tweak.ui.screen.ScreenRoute
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @SuppressLint("DefaultLocale")
@@ -76,21 +76,25 @@ import io.github.lumkit.tweak.ui.screen.ScreenRoute
 fun VabUpdaterScreen(
     viewModel: VabUpdateViewModel = viewModel { VabUpdateViewModel() },
 ) {
+
     val storageStore = LocalStorageStore.current
     val context = LocalContext.current
 
     var show by rememberSaveable { mutableStateOf(false) }
 
-    SideEffect {
-        if (!storageStore.getBoolean(Const.APP_AUTO_START_SERVICE) && !show) {
-            Toast.makeText(context, R.string.text_please_open_app_auto_start, Toast.LENGTH_SHORT)
-                .show()
-            show = true
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            if (!storageStore.getBoolean(Const.APP_AUTO_START_SERVICE) && !show) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, R.string.text_please_open_app_auto_start, Toast.LENGTH_SHORT)
+                        .show()
+                }
+                show = true
+            }
         }
     }
 
     ScreenScaffold(
-        sharedKey = ScreenRoute.VAB_UPDATE,
         title = {
             SharedTransitionText(
                 text = stringResource(R.string.text_vab_updater),
@@ -120,8 +124,10 @@ private fun InfoLayout() {
     var slot by remember { mutableStateOf("N/A") }
 
     LaunchedEffect(Unit) {
-        support = UpdateEngineClient.support()
-        slot = ReusableShells.execSync("getprop ro.boot.slot_suffix").replace("_", "").uppercase()
+        withContext(Dispatchers.IO) {
+            support = UpdateEngineClient.support()
+            slot = ReusableShells.execSync("getprop ro.boot.slot_suffix").replace("_", "").uppercase()
+        }
     }
 
     Card(
@@ -191,7 +197,7 @@ private fun InfoLayout() {
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("DefaultLocale")
 @Composable
 private fun InputCard(
@@ -418,37 +424,3 @@ private fun InputCard(
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

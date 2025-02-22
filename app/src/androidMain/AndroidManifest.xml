@@ -50,8 +50,7 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:roundIcon="@mipmap/ic_tweak_logo_round"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar"
-        tools:targetApi="24">
+        android:theme="@android:style/Theme.Material.Light.NoActionBar">
 
         <activity
             android:name=".MainActivity"
@@ -68,8 +67,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="tweak"
-                    android:host="tweak.lumtoolkit.com"
-                    android:path="/compose/vab_update" />
+                    android:host="tweak.lumtoolkit.com"/>
             </intent-filter>
         </activity>
 
@@ -97,6 +95,10 @@
         </service>
 
         <service android:name=".services.PersistentTaskService"
+            android:enabled="true"
+            android:exported="false"/>
+
+        <service android:name=".services.SmartNoticeService"
             android:enabled="true"
             android:exported="false"/>
 

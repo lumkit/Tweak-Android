@@ -119,6 +119,7 @@ import io.mhssn.colorpicker.ColorPicker
 import io.mhssn.colorpicker.ColorPickerType
 import io.mhssn.colorpicker.ext.transparentBackground
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -140,6 +141,8 @@ fun SettingsScreen(
     val sharedTransitionScope = LocalSharedTransitionScope.current
     val animatedContentScope = LocalAnimateContentScope.current
 
+    val ioScope = rememberCoroutineScope { Dispatchers.IO }
+
     ScreenScaffold(
         title = {
             SharedTransitionText(
@@ -156,7 +159,7 @@ fun SettingsScreen(
         ) {
             Spacer(modifier = Modifier.size(8.dp))
             SchemeModules(context)
-            AppModules(context, storageStore)
+            AppModules(context, storageStore, ioScope)
             About(
                 context,
                 navHostController,
@@ -735,7 +738,7 @@ private fun ColorPickerDialog(
 
 @SuppressLint("DefaultLocale", "BatteryLife")
 @Composable
-private fun AppModules(context: Context, storageStore: StorageStore) {
+private fun AppModules(context: Context, storageStore: StorageStore, ioScope: CoroutineScope) {
 
     var userExpanded by rememberSaveable { mutableStateOf(false) }
     var user by remember { mutableStateOf(ReusableShells.getDefaultInstance.user) }
@@ -919,15 +922,21 @@ private fun AppModules(context: Context, storageStore: StorageStore) {
                             expanded = userExpanded,
                             onDismissRequest = { userExpanded = false }
                         ) {
+                            var enabled by rememberSaveable { mutableStateOf(true) }
                             Config.ROOT_USERS.forEach {
                                 DropdownMenuItem(
                                     text = {
                                         Text(text = it)
                                     },
+                                    enabled = enabled,
                                     onClick = {
-                                        user = it
-                                        ReusableShells.changeUserIdAtAll(it)
-                                        userExpanded = false
+                                        enabled = false
+                                        ioScope.launch {
+                                            user = it
+                                            ReusableShells.changeUserIdAtAll(it)
+                                            userExpanded = false
+                                            enabled = true
+                                        }
                                     },
                                     leadingIcon = {
                                         Checkbox(
