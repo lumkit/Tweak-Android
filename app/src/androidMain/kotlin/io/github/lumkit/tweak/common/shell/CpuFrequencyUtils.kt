@@ -53,7 +53,7 @@ object CpuFrequencyUtils {
     }
 
     suspend fun getCurrentMaxFrequency(cluster: Int): String {
-        val clusters = getClusterInfo().also { println(it.map { it.toList() }.toList()) }
+        val clusters = getClusterInfo()
         if (cluster >= clusters.size) return ""
         val cpu = "cpu${clusters[cluster][0]}"
         return KernelProp.getProp(SCALING_MAX_FREQ.replace("cpu0", cpu))

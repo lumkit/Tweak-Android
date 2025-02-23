@@ -14,4 +14,22 @@
     <string name="text_alert">温馨提示</string>
     <string name="text_change_runtime_status_and_restart">切换并重启</string>
     <string name="text_change_runtime_status_message">将运行模式切换到【%s】需要重启Tweak，是否继续？</string>
+    <string name="text_decscribe_alert">用于在屏幕顶部显示灵动通知。</string>
+    <string name="text_decscribe_ignore_battery_optimizations">用于可以持续接收消息通知</string>
+    <string name="text_decscribe_bind_notification_listener_service">用于将系统通知显示到灵动通知上</string>
+    <string name="text_smart_notice_granted_all_permissions">已获取到所有必须权限🎉\n快去使用吧~</string>
+    <string name="text_need_permissions">所需权限</string>
+    <string name="text_name_alert">悬浮窗</string>
+    <string name="text_name_bind_notification_listener_service">通知访问</string>
+    <string name="text_name_ignore_battery_optimizations">忽略电池优化</string>
+    <string name="text_please_grant_all_permissions">请先同意所有权限~</string>
+    <string name="text_smart_notice_notification_show">状态通知</string>
+    <string name="text_smart_notice_notification_show_tips">显示一个通知以打开灵动通知</string>
+    <string name="text_smart_notice_notification_channel_description">Tweak灵动通知</string>
+    <string name="text_smart_notice_notification_title">Tweak灵动通知已运行</string>
+    <string name="text_smart_notice_notification_subtitle">点击通知以打开灵动通知管理器</string>
+    <string name="text_please_start_smart_notice">请先启动灵动通知</string>
+    <string name="text_preference">首选项</string>
+    <string name="text_smart_notice_game_mode">游戏模式</string>
+    <string name="text_smart_notice_game_mode_tips">在游戏场景中暂时隐藏灵动通知</string>
 </resources>

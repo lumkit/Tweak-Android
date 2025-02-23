@@ -10,3 +10,6 @@
 
 -keep class java.util.concurrent.** { *; }
 -dontwarn java.util.concurrent.**
+
+-keep class android.support.v8.renderscript.** { *; }
+-keep class androidx.renderscript.** { *; }

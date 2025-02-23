@@ -1,10 +1,7 @@
 package io.github.lumkit.tweak.ui.theme
 
-import android.graphics.Color
 import android.os.Build
 import androidx.activity.ComponentActivity
-import androidx.activity.SystemBarStyle
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -13,12 +10,10 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import io.github.lumkit.tweak.data.DarkModeState
 import io.github.lumkit.tweak.ui.local.LocalThemeStore
 
@@ -134,11 +129,13 @@ fun AppTheme(
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
-            val activity = view.context as ComponentActivity
-            val window = activity.window
-            window.decorView.setBackgroundColor(colorScheme.background.toArgb())
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !themeStore.realDark
-            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !themeStore.realDark
+            try {
+                val activity = view.context as ComponentActivity
+                val window = activity.window
+                window.decorView.setBackgroundColor(colorScheme.background.toArgb())
+                WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !themeStore.realDark
+                WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !themeStore.realDark
+            } catch (_: Exception) {}
         }
     }
 

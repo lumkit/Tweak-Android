@@ -11,6 +11,7 @@ androidx-espresso-core = "3.6.1"
 androidx-lifecycle = "2.9.0-alpha03"
 androidx-material = "1.12.0"
 androidx-test-junit = "1.2.1"
+cardview = "1.0.0"
 compose-multiplatform = "1.8.0-alpha03"
 junit = "4.13.2"
 kotlin = "2.1.0"
@@ -22,6 +23,7 @@ accompanist-systemuicontroller = "0.36.0"
 color-picker = "1.0.0"
 libsu-version = "6.0.0"
 shizuku-version = "13.1.5"
+material-ux = "v1.0.13.2"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -55,6 +57,9 @@ libsu-service = { module = "com.github.topjohnwu.libsu:service", version.ref = "
 libsu-nio = { module = "com.github.topjohnwu.libsu:nio", version.ref = "libsu-version" }
 shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku-version" }
 shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku-version" }
+androidx-cardview = { module = "androidx.cardview:cardview", version.ref = "cardview" }
+material-ux-core = { module = "com.github.lumyuan.MaterialUX:Core", version.ref = "material-ux" }
+material-ux-ground-glass-view = { module = "com.github.lumyuan.MaterialUX:GroundGlassView", version.ref = "material-ux" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

@@ -4,10 +4,15 @@ import androidx.core.content.edit
 import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.data.RuntimeStatus
 import io.github.lumkit.tweak.model.Const
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
 
 object ReusableShells {
     private val shells = ConcurrentHashMap<String, ReusableShell>()
+
+    private const val MAX_DEFAULT_PRECESS_SIZE = 8
 
     @Synchronized
     fun getInstance(
@@ -27,7 +32,7 @@ object ReusableShells {
         if (!shells.containsKey(key)) {
             return
         } else {
-            shells[key]?.also { it.tryExit() }
+            shells[key]?.tryExit()
             shells.remove(key)
         }
     }
@@ -55,35 +60,31 @@ object ReusableShells {
         }
 
     private val defaultReusableShell: ReusableShell
-        get() {
-            val key = "defaultReusableShell"
-            val default = shells[key]
-            return if (default == null) {
-                val shell = ReusableShell(rootUser, status = TweakApplication.runtimeStatus)
-                shells[key] = shell
-                shell
-            } else {
-                default
-            }
+        get() = getDefault("defaultReusableShell")
+
+    private fun getDefault(key: String): ReusableShell {
+        val default = shells[key]
+        return if (default == null) {
+            val shell = ReusableShell(rootUser, status = TweakApplication.runtimeStatus)
+            shells[key] = shell
+            shell
+        } else {
+            default
         }
-    private val secondaryReusableShell: ReusableShell
-        get() {
-            val key = "secondaryReusableShell"
-            val default = shells[key]
-            return if (default == null) {
-                val shell = ReusableShell(rootUser, status = TweakApplication.runtimeStatus)
-                shells[key] = shell
-                shell
-            } else {
-                default
-            }
-        }
+    }
 
     val getDefaultInstance: ReusableShell
-        get() = if (defaultReusableShell.isIdle || !secondaryReusableShell.isIdle) {
-            defaultReusableShell
-        } else {
-            secondaryReusableShell
+        get() {
+            var shell = defaultReusableShell
+            for (i in 0 until MAX_DEFAULT_PRECESS_SIZE) {
+                val key = "default-$i"
+                val process = getDefault(key)
+                if (!process.isIdle) {
+                    continue
+                }
+                shell = process
+            }
+            return shell
         }
 
     suspend fun checkRoot(): Boolean {
@@ -92,7 +93,10 @@ object ReusableShells {
 
     fun tryExit() {
         defaultReusableShell.tryExit()
-        secondaryReusableShell.tryExit()
+        for (i in 0 until MAX_DEFAULT_PRECESS_SIZE) {
+            val key = "default-$i"
+            shells[key]?.tryExit()
+        }
     }
 
     /**

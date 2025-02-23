@@ -132,43 +132,47 @@ class OverviewViewModel(
     }
 
     suspend fun loadCpuDetailState(): Unit = withContext(Dispatchers.IO) {
-        val coreDetails = mutableListOf<CoreDetail>()
+        try {
+            val coreDetails = mutableListOf<CoreDetail>()
 
-        val coreCount = CpuFrequencyUtils.getCoreCount()
-        val cpuLoad = CpuLoad.getCpuLoad()
-        val totalUsed = CpuLoad.getCpuLoadSum() / 100f
+            val coreCount = CpuFrequencyUtils.getCoreCount()
+            val cpuLoad = CpuLoad.getCpuLoad()
+            val totalUsed = CpuLoad.getCpuLoadSum() / 100f
 
-        for (i in 0 until coreCount) {
-            val cpuId = "cpu$i"
-            val minFreq = CpuFrequencyUtils.getCurrentMinFrequency(cpuId)
+            for (i in 0 until coreCount) {
+                val cpuId = "cpu$i"
+                val minFreq = CpuFrequencyUtils.getCurrentMinFrequency(cpuId)
 
-            val coreDetail = CoreDetail(
-                minFreq = minFreq,
-                maxFreq = CpuFrequencyUtils.getCurrentMaxFrequency(cpuId),
-                currentFreq = CpuFrequencyUtils.getCurrentFrequency(cpuId),
-                used = ChartState(
-                    progress = (cpuLoad[i] ?: 0f) / 100f
+                val coreDetail = CoreDetail(
+                    minFreq = minFreq,
+                    maxFreq = CpuFrequencyUtils.getCurrentMaxFrequency(cpuId),
+                    currentFreq = CpuFrequencyUtils.getCurrentFrequency(cpuId),
+                    used = ChartState(
+                        progress = (cpuLoad[i] ?: 0f) / 100f
+                    )
                 )
-            )
-            coreDetails.add(coreDetail)
-        }
-
-        val composition = buildString {
-            CpuFrequencyUtils.getClusterInfo().onEachIndexed { index, items ->
-                if (index > 0) append("+")
-                append("${items.size}")
+                coreDetails.add(coreDetail)
             }
-        }
 
-        _cpuDetailState.value = CpuDetail(
-            cpuTemperature = CpuTemperatureUtils.getCpuTemperature() ?: 25f,
-            cpuTotalUsed = ChartState(
-                progress = totalUsed
-            ),
-            cpuName = AndroidSoc.getSocByCpuMode(CpuCodenameUtils.getCpuCodename())?.NAME ?: "CPU",
-            composition = composition,
-            cores = coreDetails,
-        )
+            val composition = buildString {
+                CpuFrequencyUtils.getClusterInfo().onEachIndexed { index, items ->
+                    if (index > 0) append("+")
+                    append("${items.size}")
+                }
+            }
+
+            _cpuDetailState.value = CpuDetail(
+                cpuTemperature = CpuTemperatureUtils.getCpuTemperature() ?: 25f,
+                cpuTotalUsed = ChartState(
+                    progress = totalUsed
+                ),
+                cpuName = AndroidSoc.getSocByCpuMode(CpuCodenameUtils.getCpuCodename())?.NAME ?: "CPU",
+                composition = composition,
+                cores = coreDetails,
+            )
+        }catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager

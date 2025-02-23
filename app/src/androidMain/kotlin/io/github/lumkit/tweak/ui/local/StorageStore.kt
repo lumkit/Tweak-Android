@@ -10,7 +10,7 @@ class StorageStore {
     private val shared = TweakApplication.shared
 
     infix fun getString(name: String): String? = shared.getString(name, null)
-    infix fun getBoolean(name: String): Boolean = shared.getBoolean(name, false)
+    fun getBoolean(name: String, default: Boolean = false): Boolean = shared.getBoolean(name, default)
     fun getInt(name: String, default: Int = 0): Int = shared.getInt(name, default)
     infix fun getFloat(name: String): Float = shared.getFloat(name, 0f)
     infix fun getStringSet(name: String): Set<String>? = shared.getStringSet(name, emptySet())

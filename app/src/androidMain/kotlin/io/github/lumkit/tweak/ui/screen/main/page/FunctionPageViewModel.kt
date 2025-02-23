@@ -93,7 +93,15 @@ class FunctionPageViewModel(
                             SmartNoticeScreen()
                         },
                         arguments = listOf(),
-                        deepLinks = listOf(),
+                        deepLinks = listOf(
+                            navDeepLink {
+                                uriPattern = buildString {
+                                    append(
+                                        "${Const.Navigation.DEEP_LINE}/${ScreenRoute.SMART_NOTICE}"
+                                    )
+                                }
+                            }
+                        ),
                     ),
                 )
             )

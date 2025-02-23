@@ -68,6 +68,12 @@ kotlin {
             // Shizuku https://github.com/RikkaApps/Shizuku-API
             implementation(libs.shizuku.api)
             implementation(libs.shizuku.provider)
+
+            implementation(libs.androidx.cardview)
+
+//            // MaterialUX https://github.com/lumyuan/MaterialUX
+//            implementation(libs.material.ux.core)
+//            implementation(libs.material.ux.ground.glass.view)
         }
     }
 }
@@ -86,7 +92,9 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = versionCodeFormat.format(Date()).toInt().also { println("version code: $it") }
 //        versionCode = 1
-        versionName = "0.0.5-Alpha"
+        versionName = "0.0.6-Alpha"
+
+        renderscriptSupportModeEnabled = true
     }
 
     signingConfigs {
@@ -193,6 +201,7 @@ android {
         compose = true
         buildConfig = true
         aidl = true
+        viewBinding = true
     }
 }
 

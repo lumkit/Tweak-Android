@@ -24,4 +24,13 @@ object Const {
     object Navigation {
         const val DEEP_LINE = "tweak://tweak.lumtoolkit.com/compose"
     }
+
+    object SmartNotice {
+        // 是否开启灵动通知
+        const val SMART_NOTICE_SWITCH = "smart_notice_switch"
+        // 状态通知
+        const val SMART_NOTICE_NOTIFICATION = "smart_notice_notification"
+        // 游戏模式
+        const val SMART_NOTICE_GAME_MODE = "smart_notice_game_mode"
+    }
 }

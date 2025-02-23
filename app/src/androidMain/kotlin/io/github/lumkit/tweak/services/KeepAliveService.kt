@@ -52,6 +52,7 @@ class KeepAliveService: Service() {
         val notificationManager = this.getSystemService(
             NOTIFICATION_SERVICE
         ) as NotificationManager
+
         notificationManager.createNotificationChannel(channel)
         channel.description = getSystemService(NotificationManager::class.java).toString()
         //在创建的通知渠道上发送通知

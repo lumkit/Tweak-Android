@@ -57,19 +57,26 @@ class PersistentTaskService : Service() {
 
         initService()
 
+        // 启动耗时服务
         CoroutineScope(Dispatchers.IO).launch {
             when (TweakApplication.runtimeStatus) {
                 RuntimeStatus.Normal -> {
                     // TODO 默认模式下的持久服务
+                    // 启动灵动通知进程
+                    startSmartNoticeService()
                 }
                 RuntimeStatus.Shizuku -> {
                     // TODO Shizuku模式下的持久服务
-
+                    // 启动灵动通知进程
+                    startSmartNoticeService()
                 }
                 RuntimeStatus.Root -> {
                     if (ReusableShells.checkRoot()) {
                         startUpdateEngineClientFollow()
                     }
+
+                    // 启动灵动通知进程
+                    startSmartNoticeService()
                 }
             }
         }
@@ -94,6 +101,13 @@ class PersistentTaskService : Service() {
     private fun startUpdateEngineClientFollow() {
         updateEngineClient.watch()
         updateEngineClient.follow()
+    }
+
+    private fun startSmartNoticeService() {
+        if (TweakApplication.shared.getBoolean(Const.SmartNotice.SMART_NOTICE_SWITCH, false)) {
+            val intent = Intent(this, SmartNoticeService::class.java)
+            startService(intent)
+        }
     }
 
     @SuppressLint("DefaultLocale")
