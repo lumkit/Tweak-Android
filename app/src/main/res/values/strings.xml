@@ -32,4 +32,13 @@
     <string name="text_preference">首选项</string>
     <string name="text_smart_notice_game_mode">游戏模式</string>
     <string name="text_smart_notice_game_mode_tips">在游戏场景中暂时隐藏灵动通知</string>
+    <string name="text_function_is_debug">功能处于调试阶段，不代表最终品质</string>
+    <string name="text_function_is_testing">功能处于测试阶段，不代表最终品质</string>
+    <string name="text_power_disconnect">断开充电器</string>
+    <string name="text_power_connect">充电中</string>
+    <string name="text_name_accessibility_service">无障碍服务</string>
+    <string name="text_decscribe_accessibility_service">用于将灵动通知显示到锁屏页面</string>
+    <string name="label_accessibility_service">Tweak - 辅助服务</string>
+    <string name="text_accessibility_service_is_disabled">无障碍服务未打开，无法启动灵动通知</string>
+
 </resources>

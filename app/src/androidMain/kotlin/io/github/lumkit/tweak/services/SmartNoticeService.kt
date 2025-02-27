@@ -1,6 +1,7 @@
 package io.github.lumkit.tweak.services
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -12,33 +13,58 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.PixelFormat
+import android.os.BatteryManager
 import android.os.Build
 import android.os.IBinder
 import android.provider.Settings
 import android.view.Gravity
 import android.view.WindowManager
 import android.view.WindowManager.LayoutParams
-import android.widget.Toast
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.net.toUri
 import io.github.lumkit.tweak.R
 import io.github.lumkit.tweak.TweakApplication
+import io.github.lumkit.tweak.common.util.ServiceUtils
+import io.github.lumkit.tweak.common.util.getDiveSize
 import io.github.lumkit.tweak.model.Const
 import io.github.lumkit.tweak.ui.lifecycle.ComposeViewLifecycleOwner
 import io.github.lumkit.tweak.ui.screen.ScreenRoute
+import io.github.lumkit.tweak.ui.screen.notice.SmartNoticeViewModel
 import io.github.lumkit.tweak.ui.view.SmartNoticeWindow
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlin.random.Random
 
 val LocalSmartNoticeView = staticCompositionLocalOf<ComposeView> { error("not provided.") }
-val LocalSmartNoticeWindowManager = staticCompositionLocalOf<WindowManager> { error("not provided.") }
+val LocalSmartNoticeWindowManager =
+    staticCompositionLocalOf<WindowManager> { error("not provided.") }
 val LocalSmartNoticeWindowParams = staticCompositionLocalOf<LayoutParams> { error("not provided.") }
 
 class SmartNoticeService : Service() {
@@ -54,37 +80,72 @@ class SmartNoticeService : Service() {
         const val ACTION_GAME_MODE_ENABLED = "action_game_mode_enabled"
         const val ACTION_GAME_MODE_DISABLED = "action_game_mode_disabled"
 
+        // 充电变化
+        const val ACTION_POWER_CONNECTED = "ACTION_POWER_CONNECTED"
+        const val ACTION_POWER_DISCONNECTED = "ACTION_POWER_DISCONNECTED"
+
+        fun canStartSmartNotice(): Boolean {
+            val switch =
+                TweakApplication.shared.getBoolean(Const.SmartNotice.SMART_NOTICE_SWITCH, false)
+            val eas =
+                TweakApplication.shared.getBoolean(Const.APP_ENABLED_ACCESSIBILITY_SERVICE, false)
+            return switch && eas
+        }
+
+        fun isRunning() = ServiceUtils.isServiceRunning(
+            TweakApplication.application,
+            SmartNoticeService::class.java.name
+        )
+
         fun Context.startSmartNotice() {
             val intent = Intent(this, SmartNoticeService::class.java)
             intent.action = ACTION_START
             startService(intent)
         }
 
-        suspend fun Context.stopSmartNotice() {
+        suspend fun Context.stopSmartNotice(now: Boolean = false) {
             val intent = Intent(this, SmartNoticeService::class.java)
             intent.action = ACTION_STOP
             startService(intent)
-            delay(SmartNoticeWindow.duration)
+            if (!now) {
+                delay(SmartNoticeWindow.animatorDuration.value)
+            }
             stopService(intent)
         }
 
         fun Context.showNotificationStatus(show: Boolean) {
-            val intent = Intent(this, SmartNoticeService::class.java)
-            intent.action =
-                if (show) ACTION_NOTIFICATION_STATUS_SHOW else ACTION_NOTIFICATION_STATUS_HIDE
-            startService(intent)
+            if (canStartSmartNotice() && isRunning()) {
+                val intent = Intent(this, SmartNoticeService::class.java)
+                intent.action =
+                    if (show) ACTION_NOTIFICATION_STATUS_SHOW else ACTION_NOTIFICATION_STATUS_HIDE
+                startService(intent)
+            }
         }
 
         fun Context.enableGameMode() {
-            val intent = Intent(this, SmartNoticeService::class.java)
-            intent.action = ACTION_GAME_MODE_ENABLED
-            startService(intent)
+            if (canStartSmartNotice() && isRunning()) {
+                val intent = Intent(this, SmartNoticeService::class.java)
+                intent.action = ACTION_GAME_MODE_ENABLED
+                startService(intent)
+            }
         }
 
         fun Context.disableGameMode() {
-            val intent = Intent(this, SmartNoticeService::class.java)
-            intent.action = ACTION_GAME_MODE_DISABLED
-            startService(intent)
+            if (canStartSmartNotice() && isRunning()) {
+                val intent = Intent(this, SmartNoticeService::class.java)
+                intent.action = ACTION_GAME_MODE_DISABLED
+                startService(intent)
+            }
+        }
+
+        fun Context.chargeChange(
+            action: String
+        ) {
+            if (canStartSmartNotice() && isRunning() && runBlocking { SmartNoticeViewModel.checkAccessibilityService() }) {
+                val intent = Intent(this, SmartNoticeService::class.java)
+                intent.action = action
+                startService(intent)
+            }
         }
     }
 
@@ -92,7 +153,6 @@ class SmartNoticeService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-
         initService()
     }
 
@@ -105,7 +165,6 @@ class SmartNoticeService : Service() {
 
     private fun initService() {
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val importance = NotificationManager.IMPORTANCE_DEFAULT
@@ -122,8 +181,31 @@ class SmartNoticeService : Service() {
 
         initSmartNotice()
 
-        val filter = IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED)
-        registerReceiver(orientationChangeReceiver, filter)
+        run {
+            val filter = IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED)
+            registerReceiver(orientationChangeReceiver, filter)
+
+            if (TweakApplication.shared.getBoolean(
+                    Const.SmartNotice.SMART_NOTICE_GAME_MODE,
+                    true
+                )
+            ) {
+                gameModeChange()
+            } else {
+                smartNoticeView?.show()
+            }
+        }
+
+        run {
+            val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+            registerReceiver(batteryReceiver, filter)
+        }
+
+        run {
+            val filter = IntentFilter(Intent.ACTION_POWER_CONNECTED)
+            filter.addAction(Intent.ACTION_POWER_DISCONNECTED)
+            registerReceiver(chargingReceiver, filter)
+        }
     }
 
     private fun notify(
@@ -184,11 +266,20 @@ class SmartNoticeService : Service() {
 
     private fun showAlert() {
         // 类型
+        val accessibilityServiceWindowManager = TweakAccessibilityService.windowManager
+
         params.type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {//6.0+
-            LayoutParams.TYPE_APPLICATION_OVERLAY
+            if (accessibilityServiceWindowManager == null) {
+                LayoutParams.TYPE_APPLICATION_OVERLAY
+            } else {
+                LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
+            }
         } else {
             LayoutParams.TYPE_SYSTEM_ALERT
         }
+
+        windowManager = accessibilityServiceWindowManager
+            ?: getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
         params.format = PixelFormat.TRANSLUCENT
         params.width = LayoutParams.WRAP_CONTENT
@@ -196,11 +287,8 @@ class SmartNoticeService : Service() {
         params.gravity = Gravity.TOP or Gravity.CENTER
         params.flags = LayoutParams.FLAG_NOT_TOUCH_MODAL or
                 LayoutParams.FLAG_NOT_FOCUSABLE or
-                LayoutParams.FLAG_LAYOUT_NO_LIMITS or
                 LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                LayoutParams.FLAG_DISMISS_KEYGUARD or
-                LayoutParams.FLAG_KEEP_SCREEN_ON or
-                LayoutParams.FLAG_TURN_SCREEN_ON or
+                LayoutParams.FLAG_LAYOUT_NO_LIMITS or
                 LayoutParams.FLAG_SHOW_WHEN_LOCKED
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -249,14 +337,48 @@ class SmartNoticeService : Service() {
         smartNoticeLifecycleOwner?.onStart()
         smartNoticeLifecycleOwner?.onResume()
 
-        smartNoticeView?.show()
+        if (TweakApplication.shared.getBoolean(Const.SmartNotice.SMART_NOTICE_GAME_MODE, true)) {
+            gameModeChange()
+        } else {
+            smartNoticeView?.show()
+        }
     }
 
     // 游戏模式广播
     private val orientationChangeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            if (TweakApplication.shared.getBoolean(Const.SmartNotice.SMART_NOTICE_GAME_MODE, true)) {
+            if (TweakApplication.shared.getBoolean(
+                    Const.SmartNotice.SMART_NOTICE_GAME_MODE,
+                    true
+                )
+            ) {
                 gameModeChange()
+            }
+        }
+    }
+
+    private var batteryPercentageState by mutableFloatStateOf(0f)
+    private val batteryReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            // 获取电池电量
+            val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+            val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+
+            // 计算电池百分比
+            batteryPercentageState = (level / scale.toFloat()) * 100
+        }
+    }
+
+    private val chargingReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                Intent.ACTION_POWER_CONNECTED -> {
+                    context.chargeChange(ACTION_POWER_CONNECTED)
+                }
+
+                Intent.ACTION_POWER_DISCONNECTED -> {
+                    context.chargeChange(ACTION_POWER_DISCONNECTED)
+                }
             }
         }
     }
@@ -293,6 +415,7 @@ class SmartNoticeService : Service() {
         }
     }
 
+    @SuppressLint("DefaultLocale")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             // 开启通知
@@ -323,6 +446,38 @@ class SmartNoticeService : Service() {
             ACTION_GAME_MODE_DISABLED -> {
                 smartNoticeView?.show()
             }
+
+            ACTION_POWER_CONNECTED -> {
+                smartNoticeView?.toast(
+                    componentSize = {
+                        val diveSize = getDiveSize()
+                        DpSize(
+                            width = with(density) {
+                                diveSize.width.toDp() - 28.dp * 2f
+                            },
+                            height = 32.dp
+                        )
+                    }
+                ) {
+                    Charge(true, it)
+                }
+            }
+
+            ACTION_POWER_DISCONNECTED -> {
+                smartNoticeView?.toast(
+                    componentSize = {
+                        val diveSize = getDiveSize()
+                        DpSize(
+                            width = with(density) {
+                                diveSize.width.toDp() - 28.dp * 2f
+                            },
+                            height = 32.dp
+                        )
+                    }
+                ) {
+                    Charge(false, it)
+                }
+            }
         }
 
         return super.onStartCommand(intent, flags, startId)
@@ -331,14 +486,70 @@ class SmartNoticeService : Service() {
     override fun onDestroy() {
         try {
             windowManager?.removeView(smartNoticeView)
-        } catch (_: Exception) { }
+        } catch (_: Exception) {
+        }
         windowManager = null
         smartNoticeLifecycleOwner?.onPause()
         smartNoticeLifecycleOwner?.onStop()
         smartNoticeLifecycleOwner?.onDestroy()
         smartNoticeLifecycleOwner = null
+        smartNoticeView?.release()
         smartNoticeView = null
         unregisterReceiver(orientationChangeReceiver)
+        unregisterReceiver(batteryReceiver)
+        unregisterReceiver(chargingReceiver)
         super.onDestroy()
+    }
+
+    @SuppressLint("DefaultLocale")
+    @Composable
+    private fun Charge(connected: Boolean, smartNoticeWindow: SmartNoticeWindow) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable {
+                    smartNoticeWindow.minimize()
+                }
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            CompositionLocalProvider(
+                LocalContentColor provides if (connected) {
+                    Color(0xFF09FE75)
+                } else {
+                    Color.White
+                }
+            ) {
+                Text(
+                    text = if (connected) {
+                        stringResource(R.string.text_power_connect)
+                    } else {
+                        stringResource(R.string.text_power_disconnect)
+                    },
+                    style = MaterialTheme.typography.labelLarge
+                )
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = String.format("%.0f%s", batteryPercentageState, "%"),
+                        style = MaterialTheme.typography.labelLarge
+                    )
+
+                    Icon(
+                        painter = if (connected) {
+                            painterResource(R.drawable.ic_power_connect)
+                        } else {
+                            painterResource(R.drawable.ic_power_disconnect)
+                        },
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+        }
     }
 }

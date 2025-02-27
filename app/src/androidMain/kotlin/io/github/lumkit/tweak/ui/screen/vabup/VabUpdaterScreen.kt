@@ -86,7 +86,11 @@ fun VabUpdaterScreen(
         withContext(Dispatchers.IO) {
             if (!storageStore.getBoolean(Const.APP_AUTO_START_SERVICE) && !show) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(context, R.string.text_please_open_app_auto_start, Toast.LENGTH_SHORT)
+                    Toast.makeText(
+                        context,
+                        R.string.text_please_open_app_auto_start,
+                        Toast.LENGTH_SHORT
+                    )
                         .show()
                 }
                 show = true
@@ -126,7 +130,8 @@ private fun InfoLayout() {
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
             support = UpdateEngineClient.support()
-            slot = ReusableShells.execSync("getprop ro.boot.slot_suffix").replace("_", "").uppercase()
+            slot =
+                ReusableShells.execSync("getprop ro.boot.slot_suffix").replace("_", "").uppercase()
         }
     }
 
@@ -337,7 +342,8 @@ private fun InputCard(
         onClick = {
             viewModel.install()
         },
-        enabled = taskEnabled && updateEngineStatus.first == UpdateEngineStatus.UPDATE_STATUS_IDLE && rowFileExists && support
+        enabled = taskEnabled && updateEngineStatus.first == UpdateEngineStatus.UPDATE_STATUS_IDLE
+                && rowFileExists && support || updateEngineStatus.first == UpdateEngineStatus.ERROR
     ) {
         Text(text = startButtonTextState)
     }
@@ -356,7 +362,8 @@ private fun InputCard(
                     Text(
                         text = stringResource(R.string.text_ota_merge_tips)
                     )
-                }) {
+                }
+            ) {
                 FilledTonalButton(
                     modifier = Modifier.fillMaxWidth(),
                     onClick = {
@@ -381,7 +388,8 @@ private fun InputCard(
                     Text(
                         text = stringResource(R.string.text_ota_cancel_tips)
                     )
-                }) {
+                }
+            ) {
                 FilledTonalButton(
                     modifier = Modifier.fillMaxWidth(),
                     onClick = {

@@ -159,4 +159,5 @@
     <string name="text_nickname_len_check">昵称长度不能超过20位</string>
     <string name="text_user_sign_len_check">个性签名长度不能超过100位</string>
     <string name="text_save_fail_msg">保存失败：</string>
+    <string name="text_accessibility_service_describe">用于将Tweak灵动通知显示到锁屏上</string>
 </resources>

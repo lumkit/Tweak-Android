@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
+import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.core.app.NotificationCompat
 import androidx.core.net.toUri
@@ -44,8 +45,6 @@ class PersistentTaskService : Service() {
             intent.putExtra("res", statusStringRes)
             startService(intent)
         }
-
-
     }
 
     private val updateEngineClient = UpdateEngineClient()
@@ -104,7 +103,7 @@ class PersistentTaskService : Service() {
     }
 
     private fun startSmartNoticeService() {
-        if (TweakApplication.shared.getBoolean(Const.SmartNotice.SMART_NOTICE_SWITCH, false)) {
+        if (SmartNoticeService.canStartSmartNotice()) {
             val intent = Intent(this, SmartNoticeService::class.java)
             startService(intent)
         }
@@ -121,9 +120,6 @@ class PersistentTaskService : Service() {
                 val startIntent = Intent(Intent.ACTION_VIEW, deepLinkUri).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
-//                val startIntent = Intent(this, MainActivity::class.java).apply {
-//                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-//                }
 
                 val pendingIntent = PendingIntent.getActivity(
                     this,

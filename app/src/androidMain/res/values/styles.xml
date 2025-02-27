@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="WaterMarkView">
+        <attr name="water_mark_degree" format="integer|reference" />
+        <attr name="water_mark_text" format="string|reference" />
+        <attr name="water_mark_textColor" format="color|reference" />
+        <attr name="water_mark_image" format="color|reference" />
+        <attr name="water_mark_textSize" format="dimension|reference" />
+        <attr name="water_mark_dx" format="dimension|reference" />
+        <attr name="water_mark_dy" format="dimension|reference" />
+        <attr name="water_mark_align" format="dimension">
+            <enum name="LEFT" value="0" />
+            <enum name="CENTER" value="1" />
+            <enum name="RIGHT" value="2" />
+        </attr>
+    </declare-styleable>
+</resources>

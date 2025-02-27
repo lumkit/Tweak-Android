@@ -3,10 +3,13 @@ package io.github.lumkit.tweak.ui.component
 import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -16,7 +19,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextLayoutResult
@@ -29,17 +34,25 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import io.github.lumkit.tweak.LocalAnimateContentScope
 import io.github.lumkit.tweak.LocalScreenNavigationController
 import io.github.lumkit.tweak.LocalSharedTransitionScope
 import io.github.lumkit.tweak.R
+import io.github.lumkit.tweak.ui.view.WaterMarkView
+
+@Immutable
+enum class DevelopmentStage {
+    Debug, Testing, Release
+}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun ScreenScaffold(
     modifier: Modifier = Modifier,
+    stage: DevelopmentStage = DevelopmentStage.Release,
     navHostController: NavHostController = LocalScreenNavigationController.current,
     sharedKey: String? = null,
     sharedTransitionScope: SharedTransitionScope = LocalSharedTransitionScope.current,
@@ -75,33 +88,63 @@ fun ScreenScaffold(
     content: @Composable (PaddingValues) -> Unit,
 ) {
     with(sharedTransitionScope) {
-        Scaffold(
-            modifier = modifier
-                .then(
-                    if (sharedKey.isNullOrBlank()) {
-                        Modifier
-                    } else {
-                        Modifier.sharedBounds(
-                            sharedContentState = rememberSharedContentState("${sharedKey}-box"),
-                            animatedVisibilityScope = animatedContentScope,
-                        )
-                    }
-                ),
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-            topBar = {
-                TopAppBar(
-                    modifier = Modifier.fillMaxWidth(),
-                    navigationIcon = {
-                        navigation?.invoke()
-                    },
-                    title = {
-                        title(sharedKey)
-                    },
-                    actions = actions,
-                )
-            },
-            content = content
-        )
+        Box {
+            Scaffold(
+                modifier = modifier
+                    .then(
+                        if (sharedKey.isNullOrBlank()) {
+                            Modifier
+                        } else {
+                            Modifier.sharedBounds(
+                                sharedContentState = rememberSharedContentState("${sharedKey}-box"),
+                                animatedVisibilityScope = animatedContentScope,
+                            )
+                        }
+                    ),
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                topBar = {
+                    TopAppBar(
+                        modifier = Modifier.fillMaxWidth(),
+                        navigationIcon = {
+                            navigation?.invoke()
+                        },
+                        title = {
+                            title(sharedKey)
+                        },
+                        actions = actions,
+                    )
+                },
+                content = content
+            )
+
+            when (stage) {
+                DevelopmentStage.Debug -> {
+                    AndroidView(
+                        modifier = Modifier.fillMaxSize()
+                            .clip(RoundedCornerShape(1.dp)),
+                        factory = {
+                            WaterMarkView(it)
+                        },
+                        update = {
+                            it.setText(it.context.getString(R.string.text_function_is_debug))
+                        }
+                    )
+                }
+                DevelopmentStage.Testing -> {
+                    AndroidView(
+                        modifier = Modifier.fillMaxSize()
+                            .clip(RoundedCornerShape(1.dp)),
+                        factory = {
+                            WaterMarkView(it)
+                        },
+                        update = {
+                            it.setText(it.context.getString(R.string.text_function_is_testing))
+                        }
+                    )
+                }
+                DevelopmentStage.Release -> Unit
+            }
+        }
     }
 }
 

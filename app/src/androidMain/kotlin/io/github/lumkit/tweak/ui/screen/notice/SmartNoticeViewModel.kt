@@ -13,8 +13,12 @@ import androidx.core.app.ActivityCompat
 import io.github.lumkit.tweak.R
 import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.common.BaseViewModel
+import io.github.lumkit.tweak.common.shell.provide.ReusableShells
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 
 @SuppressLint("StaticFieldLeak")
 class SmartNoticeViewModel(
@@ -36,6 +40,10 @@ class SmartNoticeViewModel(
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(intent)
         }
+
+        suspend fun checkAccessibilityService(): Boolean = withContext(Dispatchers.IO) {
+            ReusableShells.execSync("settings get secure enabled_accessibility_services").contains(TweakApplication.application.packageName)
+        }
     }
 
     @Immutable
@@ -49,6 +57,13 @@ class SmartNoticeViewModel(
 
     private val _permissionsState = MutableStateFlow(
         listOf(
+            PermissionState(
+                name = TweakApplication.application.getString(R.string.text_name_accessibility_service),
+                permission = Manifest.permission.BIND_ACCESSIBILITY_SERVICE,
+                grant = false,
+                describe = TweakApplication.application.getString(R.string.text_decscribe_accessibility_service),
+                icon = R.drawable.ic_alert,
+            ),
             PermissionState(
                 name = TweakApplication.application.getString(R.string.text_name_alert),
                 permission = Manifest.permission.SYSTEM_ALERT_WINDOW,
@@ -82,6 +97,10 @@ class SmartNoticeViewModel(
                 list.add(permissionState.copy(grant = TweakApplication.application.isNotificationListenersEnabled()))
             } else if (permissionState.permission == Manifest.permission.SYSTEM_ALERT_WINDOW){
                 list.add(permissionState.copy(grant = Settings.canDrawOverlays(TweakApplication.application)))
+            } else if (permissionState.permission == Manifest.permission.BIND_ACCESSIBILITY_SERVICE) {
+                list.add(
+                    permissionState.copy(grant = runBlocking { checkAccessibilityService() })
+                )
             } else {
                 val grant = ActivityCompat.checkSelfPermission(activity, permissionState.permission)
                 list.add(permissionState.copy(grant = grant == PackageManager.PERMISSION_GRANTED))

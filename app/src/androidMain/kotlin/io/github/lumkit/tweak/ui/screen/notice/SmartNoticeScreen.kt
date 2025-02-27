@@ -3,7 +3,6 @@ package io.github.lumkit.tweak.ui.screen.notice
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
-import android.net.Uri
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -77,14 +76,15 @@ import io.github.lumkit.tweak.ui.component.SharedTransitionText
 import io.github.lumkit.tweak.ui.local.LocalStorageStore
 import io.github.lumkit.tweak.ui.local.StorageStore
 import io.github.lumkit.tweak.ui.screen.notice.SmartNoticeViewModel.Companion.gotoNotificationAccessSetting
-import io.github.lumkit.tweak.ui.screen.notice.SmartNoticeViewModel.Companion.isNotificationListenersEnabled
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.core.net.toUri
+import io.github.lumkit.tweak.common.shell.provide.ReusableShells
 import io.github.lumkit.tweak.common.util.ServiceUtils
 import io.github.lumkit.tweak.services.SmartNoticeService
 import io.github.lumkit.tweak.services.SmartNoticeService.Companion.disableGameMode
 import io.github.lumkit.tweak.services.SmartNoticeService.Companion.enableGameMode
+import io.github.lumkit.tweak.ui.component.DevelopmentStage
 import kotlinx.coroutines.launch
 
 
@@ -123,7 +123,8 @@ fun SmartNoticeScreen(
             SharedTransitionText(
                 text = stringResource(R.string.text_smart_notice),
             )
-        }
+        },
+        stage = DevelopmentStage.Testing
     ) {
         Column(
             modifier = Modifier
@@ -134,7 +135,7 @@ fun SmartNoticeScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Spacer(modifier = Modifier)
-            PermissionsRow(viewModel)
+            PermissionsRow(viewModel, storageStore)
             Spacer(modifier = Modifier)
             ContentList(viewModel, activity, storageStore)
         }
@@ -143,7 +144,7 @@ fun SmartNoticeScreen(
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-private fun PermissionsRow(viewModel: SmartNoticeViewModel) {
+private fun PermissionsRow(viewModel: SmartNoticeViewModel, storageStore: StorageStore) {
 
     val sharedTransitionScope = LocalSharedTransitionScope.current
 
@@ -188,7 +189,8 @@ private fun PermissionsRow(viewModel: SmartNoticeViewModel) {
                 sharedTransitionScope,
                 this,
                 viewModel,
-                permissionsState
+                permissionsState,
+                storageStore,
             )
         }
     }
@@ -242,7 +244,8 @@ private fun PermissionsList(
     sharedTransitionScope: SharedTransitionScope,
     animatedContentScope: AnimatedContentScope,
     viewModel: SmartNoticeViewModel,
-    permissionsState: List<SmartNoticeViewModel.PermissionState>
+    permissionsState: List<SmartNoticeViewModel.PermissionState>,
+    storageStore: StorageStore
 ) {
     with(sharedTransitionScope) {
         Column(
@@ -277,6 +280,7 @@ private fun PermissionsList(
                     PermissionItem(
                         permissionState,
                         viewModel,
+                        storageStore
                     )
                 }
                 Spacer(modifier = Modifier.size(8.dp))
@@ -289,9 +293,11 @@ private fun PermissionsList(
 @Composable
 private fun PermissionItem(
     permissionState: SmartNoticeViewModel.PermissionState,
-    viewModel: SmartNoticeViewModel
+    viewModel: SmartNoticeViewModel,
+    storageStore: StorageStore
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope { Dispatchers.IO }
 
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -302,8 +308,13 @@ private fun PermissionItem(
     val alertLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) {
-        viewModel.requestPermission(permission = permissionState.permission, it.resultCode == Activity.RESULT_OK)
+        viewModel.requestPermission(
+            permission = permissionState.permission,
+            it.resultCode == Activity.RESULT_OK
+        )
     }
+
+    var enabled by rememberSaveable { mutableStateOf(true) }
 
     RichTooltipBox(
         tooltip = {
@@ -314,6 +325,7 @@ private fun PermissionItem(
             modifier = Modifier
                 .fillMaxHeight()
                 .width(150.dp),
+            enabled = enabled,
             onClick = {
                 if (permissionState.permission == Manifest.permission.BIND_NOTIFICATION_LISTENER_SERVICE) {
                     context.gotoNotificationAccessSetting()
@@ -324,6 +336,18 @@ private fun PermissionItem(
                             "package:${context.packageName}".toUri()
                         )
                     )
+                } else if (permissionState.permission == Manifest.permission.BIND_ACCESSIBILITY_SERVICE) {
+                    enabled = false
+                    coroutineScope.launch {
+                        try {
+                            ReusableShells.execSync("settings put secure enabled_accessibility_services ${context.packageName}/.services.TweakAccessibilityService")
+                            ReusableShells.execSync("settings put secure accessibility_enabled 1")
+                            storageStore.putBoolean(Const.APP_ENABLED_ACCESSIBILITY_SERVICE, SmartNoticeViewModel.checkAccessibilityService())
+                            viewModel.checkPermissions()
+                        } finally {
+                            enabled = true
+                        }
+                    }
                 } else {
                     launcher.launch(permissionState.permission)
                 }
@@ -506,7 +530,11 @@ fun ContentList(
                 onClick = {
                     switch = !switch
                     storageStore.putBoolean(Const.SmartNotice.SMART_NOTICE_GAME_MODE, switch)
-                    if (ServiceUtils.isServiceRunning(activity, SmartNoticeService::class.java.name)) {
+                    if (ServiceUtils.isServiceRunning(
+                            activity,
+                            SmartNoticeService::class.java.name
+                        )
+                    ) {
                         if (switch) {
                             activity.enableGameMode()
                         } else {
