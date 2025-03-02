@@ -1,6 +1,7 @@
 package io.github.lumkit.tweak.ui.screen.notice
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.provider.Settings
@@ -18,6 +19,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,18 +36,28 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -53,22 +65,43 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.lumkit.tweak.LocalSharedTransitionScope
 import io.github.lumkit.tweak.R
+import io.github.lumkit.tweak.common.shell.provide.ReusableShells
+import io.github.lumkit.tweak.common.util.ServiceUtils
+import io.github.lumkit.tweak.common.util.getDiveSize
+import io.github.lumkit.tweak.common.util.getStatusBarHeight
 import io.github.lumkit.tweak.model.Const
+import io.github.lumkit.tweak.services.SmartNoticeService
+import io.github.lumkit.tweak.services.SmartNoticeService.Companion.ACTION_POWER_CONNECTED
+import io.github.lumkit.tweak.services.SmartNoticeService.Companion.ACTION_POWER_DISCONNECTED
+import io.github.lumkit.tweak.services.SmartNoticeService.Companion.chargeChange
+import io.github.lumkit.tweak.services.SmartNoticeService.Companion.disableGameMode
+import io.github.lumkit.tweak.services.SmartNoticeService.Companion.enableGameMode
 import io.github.lumkit.tweak.services.SmartNoticeService.Companion.showNotificationStatus
 import io.github.lumkit.tweak.services.SmartNoticeService.Companion.startSmartNotice
 import io.github.lumkit.tweak.services.SmartNoticeService.Companion.stopSmartNotice
+import io.github.lumkit.tweak.services.SmartNoticeService.Companion.updateCutoutGravity
+import io.github.lumkit.tweak.services.SmartNoticeService.Companion.updateCutoutHeight
+import io.github.lumkit.tweak.services.SmartNoticeService.Companion.updateCutoutRadius
+import io.github.lumkit.tweak.services.SmartNoticeService.Companion.updateCutoutWidth
+import io.github.lumkit.tweak.services.SmartNoticeService.Companion.updateStart
+import io.github.lumkit.tweak.services.SmartNoticeService.Companion.updateTop
 import io.github.lumkit.tweak.ui.component.DetailItem
+import io.github.lumkit.tweak.ui.component.DevelopmentStage
+import io.github.lumkit.tweak.ui.component.FolderItem
 import io.github.lumkit.tweak.ui.component.GroupDetail
 import io.github.lumkit.tweak.ui.component.RichTooltipBox
 import io.github.lumkit.tweak.ui.component.ScreenScaffold
@@ -76,16 +109,16 @@ import io.github.lumkit.tweak.ui.component.SharedTransitionText
 import io.github.lumkit.tweak.ui.local.LocalStorageStore
 import io.github.lumkit.tweak.ui.local.StorageStore
 import io.github.lumkit.tweak.ui.screen.notice.SmartNoticeViewModel.Companion.gotoNotificationAccessSetting
+import io.github.lumkit.tweak.ui.token.SmartNoticeCapsuleDefault
+import io.github.lumkit.tweak.ui.view.SmartNoticeWindow
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import androidx.core.net.toUri
-import io.github.lumkit.tweak.common.shell.provide.ReusableShells
-import io.github.lumkit.tweak.common.util.ServiceUtils
-import io.github.lumkit.tweak.services.SmartNoticeService
-import io.github.lumkit.tweak.services.SmartNoticeService.Companion.disableGameMode
-import io.github.lumkit.tweak.services.SmartNoticeService.Companion.enableGameMode
-import io.github.lumkit.tweak.ui.component.DevelopmentStage
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlin.math.roundToInt
+import kotlin.math.roundToLong
+import kotlin.random.Random
 
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -327,29 +360,37 @@ private fun PermissionItem(
                 .width(150.dp),
             enabled = enabled,
             onClick = {
-                if (permissionState.permission == Manifest.permission.BIND_NOTIFICATION_LISTENER_SERVICE) {
-                    context.gotoNotificationAccessSetting()
-                } else if (permissionState.permission == Manifest.permission.SYSTEM_ALERT_WINDOW) {
-                    alertLauncher.launch(
-                        Intent(
-                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                            "package:${context.packageName}".toUri()
+                when (permissionState.permission) {
+                    Manifest.permission.BIND_NOTIFICATION_LISTENER_SERVICE -> {
+                        context.gotoNotificationAccessSetting()
+                    }
+                    Manifest.permission.SYSTEM_ALERT_WINDOW -> {
+                        alertLauncher.launch(
+                            Intent(
+                                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                "package:${context.packageName}".toUri()
+                            )
                         )
-                    )
-                } else if (permissionState.permission == Manifest.permission.BIND_ACCESSIBILITY_SERVICE) {
-                    enabled = false
-                    coroutineScope.launch {
-                        try {
-                            ReusableShells.execSync("settings put secure enabled_accessibility_services ${context.packageName}/.services.TweakAccessibilityService")
-                            ReusableShells.execSync("settings put secure accessibility_enabled 1")
-                            storageStore.putBoolean(Const.APP_ENABLED_ACCESSIBILITY_SERVICE, SmartNoticeViewModel.checkAccessibilityService())
-                            viewModel.checkPermissions()
-                        } finally {
-                            enabled = true
+                    }
+                    Manifest.permission.BIND_ACCESSIBILITY_SERVICE -> {
+                        enabled = false
+                        coroutineScope.launch {
+                            try {
+                                ReusableShells.execSync("settings put secure enabled_accessibility_services ${context.packageName}/.services.TweakAccessibilityService")
+                                ReusableShells.execSync("settings put secure accessibility_enabled 1")
+                                storageStore.putBoolean(
+                                    Const.APP_ENABLED_ACCESSIBILITY_SERVICE,
+                                    SmartNoticeViewModel.checkAccessibilityService()
+                                )
+                                viewModel.checkPermissions()
+                            } finally {
+                                enabled = true
+                            }
                         }
                     }
-                } else {
-                    launcher.launch(permissionState.permission)
+                    else -> {
+                        launcher.launch(permissionState.permission)
+                    }
                 }
             },
             colors = CardDefaults.cardColors(
@@ -421,6 +462,8 @@ fun ContentList(
             )
         }
     ) {
+
+        // 开关
         run {
             var switch by rememberSaveable { mutableStateOf(storageStore.getBoolean(Const.SmartNotice.SMART_NOTICE_SWITCH)) }
             var enabled by rememberSaveable { mutableStateOf(true) }
@@ -463,6 +506,7 @@ fun ContentList(
             )
         }
 
+        // 状态通知
         run {
             var switch by rememberSaveable {
                 mutableStateOf(
@@ -506,6 +550,7 @@ fun ContentList(
             )
         }
 
+        // 游戏模式
         run {
             var switch by rememberSaveable {
                 mutableStateOf(
@@ -550,5 +595,957 @@ fun ContentList(
                 }
             )
         }
+
+        // 位置调整
+        run {
+            var dialogState by rememberSaveable { mutableStateOf(false) }
+            DetailItem(
+                title = {
+                    Text(
+                        text = stringResource(R.string.text_smart_notice_set_position)
+                    )
+                },
+                subTitle = {
+                    Text(
+                        text = stringResource(R.string.text_smart_notice_set_position_tips)
+                    )
+                },
+                onClick = {
+                    dialogState = true
+                },
+                actions = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_right),
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            )
+
+            SetNoticeFieldDialog(dialogState, activity, storageStore) {
+                dialogState = false
+            }
+        }
+
+        // 测试用
+        Button(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            onClick = {
+                activity.chargeChange(
+                    if (Random.nextInt() % 2 == 0) {
+                        ACTION_POWER_CONNECTED
+                    } else {
+                        ACTION_POWER_DISCONNECTED
+                    }
+                )
+            }
+        ) {
+            Text(
+                text = "动画测试"
+            )
+        }
+
+        Spacer(
+            modifier = Modifier.height(8.dp)
+        )
+    }
+}
+
+@Composable
+private fun SetNoticeFieldDialog(
+    visible: Boolean,
+    activity: ComponentActivity,
+    storageStore: StorageStore,
+    onDismissRequest: () -> Unit,
+) {
+    if (visible) {
+        AlertDialog(
+            onDismissRequest = onDismissRequest,
+            title = {
+                Text(
+                    text = stringResource(R.string.text_smart_notice_set_position)
+                )
+            },
+            text = {
+                SetNoticeFieldBox(activity, storageStore)
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onDismissRequest()
+                    }
+                ) {
+                    Text(
+                        text = stringResource(R.string.text_confirm)
+                    )
+                }
+            },
+            dismissButton = {
+                FilledTonalButton(
+                    onClick = onDismissRequest
+                ) {
+                    Text(
+                        text = stringResource(R.string.text_cancel)
+                    )
+                }
+            }
+        )
+    }
+}
+
+@SuppressLint("DefaultLocale")
+@Composable
+private fun SetNoticeFieldBox(activity: ComponentActivity, storageStore: StorageStore) {
+
+    val deviceSize = remember { activity.getDiveSize() }
+    val density = LocalDensity.current
+
+    with(density) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState()),
+        ) {
+            //挖孔位置
+            run {
+                var gravity by rememberSaveable { mutableStateOf(SmartNoticeWindow.Companion.Gravity.Center) }
+
+                LaunchedEffect(Unit) {
+                    try {
+                        gravity = SmartNoticeWindow.Companion.Gravity.entries[
+                            storageStore.getInt(
+                                Const.SmartNotice.SMART_NOTICE_CUTOUT_POSITION,
+                                SmartNoticeWindow.Companion.Gravity.Center.ordinal
+                            )
+                        ]
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+
+                FolderItem(
+                    title = {
+                        Text(
+                            text = stringResource(R.string.text_cutout_position)
+                        )
+                    },
+                    subtitle = {
+                        Text(
+                            text = stringResource(R.string.text_cutout_position_tips)
+                        )
+                    },
+                    trailingIcon = {
+                        Column {
+                            var expanded by rememberSaveable { mutableStateOf(false) }
+                            TextButton(
+                                onClick = {
+                                    expanded = true
+                                }
+                            ) {
+                                Text(
+                                    text = gravity.asString()
+                                )
+                            }
+
+                            DropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                SmartNoticeWindow.Companion.Gravity.entries.forEach {
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = it.asString()
+                                            )
+                                        },
+                                        onClick = {
+                                            gravity = it
+                                            activity.updateCutoutGravity(it.gravity)
+                                            storageStore.putInt(
+                                                Const.SmartNotice.SMART_NOTICE_CUTOUT_POSITION,
+                                                it.ordinal
+                                            )
+                                            expanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                )
+            }
+
+            // y轴
+            run {
+                var yPosition by rememberSaveable { mutableFloatStateOf(0f) }
+                var valueEditDialogState by rememberSaveable { mutableStateOf(false) }
+
+                LaunchedEffect(Unit) {
+                    with(density) {
+                        try {
+                            val size = SmartNoticeWindow.islandCustomSize.filter { it != Size.Zero }
+                                .first()
+                            yPosition = storageStore.getFloat(
+                                Const.SmartNotice.SMART_NOTICE_OFFSET_Y,
+                                (getStatusBarHeight() - size.height.roundToInt() - SmartNoticeCapsuleDefault.CapsulePaddingTop.roundToPx() / 2f).toDp().value
+                            )
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+
+                ValueEditDialog(
+                    visible = valueEditDialogState,
+                    value = yPosition.toString()
+                ) {
+                    if (it.isBlank()) {
+                        valueEditDialogState = false
+                        return@ValueEditDialog
+                    }
+                    try {
+                        val float = it.toFloat()
+                        if (float !in 0f..deviceSize.height.toDp().value) {
+                            Toast.makeText(
+                                activity,
+                                R.string.text_value_is_out_bounds,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            yPosition = float
+                            valueEditDialogState = false
+                            activity.updateTop(float)
+                            storageStore.putFloat(
+                                Const.SmartNotice.SMART_NOTICE_OFFSET_Y,
+                                yPosition
+                            )
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        Toast.makeText(
+                            activity,
+                            String.format(
+                                activity.getString(R.string.text_throws_error),
+                                e.message
+                            ),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+
+                FolderItem(
+                    title = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = stringResource(R.string.text_position_top),
+                            )
+
+                            Text(
+                                text = String.format("%.2fdp", yPosition),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.clickable(
+                                    indication = null,
+                                    interactionSource = null
+                                ) {
+                                    valueEditDialogState = true
+                                }
+                            )
+                        }
+                    },
+                    subtitle = {
+                        Slider(
+                            modifier = Modifier.fillMaxWidth(),
+                            value = yPosition,
+                            onValueChange = {
+                                yPosition = it
+                                activity.updateTop(it)
+                                storageStore.putFloat(
+                                    Const.SmartNotice.SMART_NOTICE_OFFSET_Y,
+                                    it
+                                )
+                            },
+                            onValueChangeFinished = {
+
+                            },
+                            valueRange = -deviceSize.height.toDp().value.roundToInt()
+                                .toFloat()..deviceSize.height.toDp().value.roundToInt().toFloat(),
+                        )
+                    }
+                )
+            }
+
+            // x轴
+            run {
+                var xPosition by rememberSaveable { mutableFloatStateOf(0f) }
+                var valueEditDialogState by rememberSaveable { mutableStateOf(false) }
+
+                LaunchedEffect(Unit) {
+                    try {
+                        xPosition = storageStore.getFloat(
+                            Const.SmartNotice.SMART_NOTICE_OFFSET_X,
+                            0f
+                        )
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+
+                ValueEditDialog(
+                    visible = valueEditDialogState,
+                    value = xPosition.toString()
+                ) {
+                    if (it.isBlank()) {
+                        valueEditDialogState = false
+                        return@ValueEditDialog
+                    }
+                    try {
+                        val float = it.toFloat()
+                        if (float !in -deviceSize.width.toDp().value..deviceSize.width.toDp().value) {
+                            Toast.makeText(
+                                activity,
+                                R.string.text_value_is_out_bounds,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            xPosition = float
+                            valueEditDialogState = false
+                            activity.updateStart(float)
+                            storageStore.putFloat(
+                                Const.SmartNotice.SMART_NOTICE_OFFSET_X,
+                                xPosition
+                            )
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        Toast.makeText(
+                            activity,
+                            String.format(
+                                activity.getString(R.string.text_throws_error),
+                                e.message
+                            ),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+
+                FolderItem(
+                    title = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = stringResource(R.string.text_position_start),
+                            )
+                            Text(
+                                text = String.format("%.2fdp", xPosition),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.clickable(
+                                    indication = null,
+                                    interactionSource = null
+                                ) {
+                                    valueEditDialogState = true
+                                }
+                            )
+                        }
+                    },
+                    subtitle = {
+                        Slider(
+                            modifier = Modifier.fillMaxWidth(),
+                            value = xPosition,
+                            onValueChange = {
+                                xPosition = it
+                                activity.updateStart(it)
+                                storageStore.putFloat(
+                                    Const.SmartNotice.SMART_NOTICE_OFFSET_X,
+                                    it
+                                )
+                            },
+                            onValueChangeFinished = {
+
+                            },
+                            valueRange = -deviceSize.width.toDp().value.roundToInt()
+                                .toFloat()..deviceSize.width.toDp().value.roundToInt().toFloat(),
+                        )
+                    }
+                )
+            }
+
+            // 宽度
+            run {
+                var width by rememberSaveable { mutableFloatStateOf(0f) }
+                var valueEditDialogState by rememberSaveable { mutableStateOf(false) }
+
+                LaunchedEffect(Unit) {
+                    with(density) {
+                        try {
+                            width = storageStore.getFloat(
+                                Const.SmartNotice.SMART_NOTICE_WIDTH,
+                                SmartNoticeWindow.islandCustomSize.value.width.toDp().value
+                            )
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+
+                ValueEditDialog(
+                    visible = valueEditDialogState,
+                    value = width.toString()
+                ) {
+                    if (it.isBlank()) {
+                        valueEditDialogState = false
+                        return@ValueEditDialog
+                    }
+                    try {
+                        val float = it.toFloat()
+                        if (float !in 0f..deviceSize.width.toDp().value) {
+                            Toast.makeText(
+                                activity,
+                                R.string.text_value_is_out_bounds,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            width = float
+                            valueEditDialogState = false
+                            activity.updateCutoutWidth(float)
+                            storageStore.putFloat(
+                                Const.SmartNotice.SMART_NOTICE_WIDTH,
+                                width
+                            )
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        Toast.makeText(
+                            activity,
+                            String.format(
+                                activity.getString(R.string.text_throws_error),
+                                e.message
+                            ),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+
+                FolderItem(
+                    title = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = stringResource(R.string.text_smart_notice_width),
+                            )
+                            Text(
+                                text = String.format("%.2fdp", width),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.clickable(
+                                    indication = null,
+                                    interactionSource = null
+                                ) {
+                                    valueEditDialogState = true
+                                }
+                            )
+                        }
+                    },
+                    subtitle = {
+                        Slider(
+                            modifier = Modifier.fillMaxWidth(),
+                            value = width,
+                            onValueChange = {
+                                width = it
+                                activity.updateCutoutWidth(it)
+                                storageStore.putFloat(
+                                    Const.SmartNotice.SMART_NOTICE_WIDTH,
+                                    it
+                                )
+                            },
+                            onValueChangeFinished = {
+
+                            },
+                            valueRange = 0f..deviceSize.width.toDp().value.roundToInt().toFloat(),
+                        )
+                    }
+                )
+            }
+
+            // 高度
+            run {
+                var height by rememberSaveable { mutableFloatStateOf(0f) }
+                var valueEditDialogState by rememberSaveable { mutableStateOf(false) }
+
+                LaunchedEffect(Unit) {
+                    with(density) {
+                        try {
+                            height = storageStore.getFloat(
+                                Const.SmartNotice.SMART_NOTICE_HEIGHT,
+                                SmartNoticeWindow.islandCustomSize.value.height.toDp().value
+                            )
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+
+                ValueEditDialog(
+                    visible = valueEditDialogState,
+                    value = height.toString()
+                ) {
+                    if (it.isBlank()) {
+                        valueEditDialogState = false
+                        return@ValueEditDialog
+                    }
+                    try {
+                        val float = it.toFloat()
+                        if (float !in 0f..deviceSize.width.toDp().value) {
+                            Toast.makeText(
+                                activity,
+                                R.string.text_value_is_out_bounds,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            height = float
+                            valueEditDialogState = false
+                            activity.updateCutoutHeight(float)
+                            storageStore.putFloat(
+                                Const.SmartNotice.SMART_NOTICE_HEIGHT,
+                                height
+                            )
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        Toast.makeText(
+                            activity,
+                            String.format(
+                                activity.getString(R.string.text_throws_error),
+                                e.message
+                            ),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+
+                FolderItem(
+                    title = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = stringResource(R.string.text_smart_notice_height),
+                            )
+                            Text(
+                                text = String.format("%.2fdp", height),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.clickable(
+                                    indication = null,
+                                    interactionSource = null
+                                ) {
+                                    valueEditDialogState = true
+                                }
+                            )
+                        }
+                    },
+                    subtitle = {
+                        Slider(
+                            modifier = Modifier.fillMaxWidth(),
+                            value = height,
+                            onValueChange = {
+                                height = it
+                                activity.updateCutoutHeight(it)
+                                storageStore.putFloat(
+                                    Const.SmartNotice.SMART_NOTICE_HEIGHT,
+                                    it
+                                )
+                            },
+                            onValueChangeFinished = {
+
+                            },
+                            valueRange = 0f..deviceSize.width.toDp().value.roundToInt().toFloat(),
+                        )
+                    }
+                )
+            }
+
+            // 圆角
+            run {
+                var radius by rememberSaveable { mutableFloatStateOf(0f) }
+                var valueEditDialogState by rememberSaveable { mutableStateOf(false) }
+
+                LaunchedEffect(Unit) {
+                    with(density) {
+                        try {
+                            radius = storageStore.getFloat(
+                                Const.SmartNotice.SMART_NOTICE_CUTOUT_RADIUS,
+                                SmartNoticeWindow.islandCustomSize.value.height.toDp().value / 2f
+                            )
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+
+                ValueEditDialog(
+                    visible = valueEditDialogState,
+                    value = radius.toString()
+                ) {
+                    if (it.isBlank()) {
+                        valueEditDialogState = false
+                        return@ValueEditDialog
+                    }
+                    try {
+                        val float = it.toFloat()
+                        if (float !in 0f..(deviceSize.width.toDp().value / 2f)) {
+                            Toast.makeText(
+                                activity,
+                                R.string.text_value_is_out_bounds,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            radius = float
+                            valueEditDialogState = false
+                            activity.updateCutoutRadius(float)
+                            storageStore.putFloat(
+                                Const.SmartNotice.SMART_NOTICE_CUTOUT_RADIUS,
+                                radius
+                            )
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        Toast.makeText(
+                            activity,
+                            String.format(
+                                activity.getString(R.string.text_throws_error),
+                                e.message
+                            ),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+
+                FolderItem(
+                    title = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = stringResource(R.string.text_smart_notice_radius),
+                            )
+                            Text(
+                                text = String.format("%.2fdp", radius),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.clickable(
+                                    indication = null,
+                                    interactionSource = null
+                                ) {
+                                    valueEditDialogState = true
+                                }
+                            )
+                        }
+                    },
+                    subtitle = {
+                        Slider(
+                            modifier = Modifier.fillMaxWidth(),
+                            value = radius,
+                            onValueChange = {
+                                radius = it
+                                activity.updateCutoutRadius(it)
+                                storageStore.putFloat(
+                                    Const.SmartNotice.SMART_NOTICE_CUTOUT_RADIUS,
+                                    it
+                                )
+                            },
+                            onValueChangeFinished = {
+
+                            },
+                            valueRange = 0f..(deviceSize.width.toDp().value.roundToInt()
+                                .toFloat() / 2f),
+                        )
+                    }
+                )
+            }
+
+            // animate duration
+            run {
+                var duration by rememberSaveable { mutableLongStateOf(0L) }
+                var valueEditDialogState by rememberSaveable { mutableStateOf(false) }
+
+                LaunchedEffect(Unit) {
+                    try {
+                        duration = storageStore.getLong(
+                            Const.SmartNotice.SMART_NOTICE_ANIMATION_DURATION,
+                            550L
+                        )
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+
+                ValueEditDialog(
+                    visible = valueEditDialogState,
+                    unit = "ms",
+                    value = duration.toString()
+                ) {
+                    if (it.isBlank()) {
+                        valueEditDialogState = false
+                        return@ValueEditDialog
+                    }
+                    try {
+                        val long = it.toLong()
+                        if (long !in 200L..5000L) {
+                            Toast.makeText(
+                                activity,
+                                R.string.text_value_is_out_bounds,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            duration = long
+                            valueEditDialogState = false
+
+                            SmartNoticeWindow.animatorDuration.value = duration
+                            storageStore.putLong(
+                                Const.SmartNotice.SMART_NOTICE_ANIMATION_DURATION,
+                                duration
+                            )
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        Toast.makeText(
+                            activity,
+                            String.format(
+                                activity.getString(R.string.text_throws_error),
+                                e.message
+                            ),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+
+                FolderItem(
+                    title = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = stringResource(R.string.text_smart_notice_animation_duration),
+                            )
+                            Text(
+                                text = String.format("%dms", duration),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.clickable(
+                                    indication = null,
+                                    interactionSource = null
+                                ) {
+                                    valueEditDialogState = true
+                                }
+                            )
+                        }
+                    },
+                    subtitle = {
+                        Slider(
+                            modifier = Modifier.fillMaxWidth(),
+                            value = duration.toFloat(),
+                            onValueChange = {
+                                duration = it.roundToLong()
+                                SmartNoticeWindow.animatorDuration.value = duration
+                                storageStore.putLong(
+                                    Const.SmartNotice.SMART_NOTICE_ANIMATION_DURATION,
+                                    duration
+                                )
+                            },
+                            onValueChangeFinished = {
+
+                            },
+                            valueRange = 200f..5000f,
+                        )
+                    }
+                )
+            }
+
+            // delay duration
+            run {
+                var duration by rememberSaveable { mutableLongStateOf(0L) }
+                var valueEditDialogState by rememberSaveable { mutableStateOf(false) }
+
+                LaunchedEffect(Unit) {
+                    try {
+                        duration = storageStore.getLong(
+                            Const.SmartNotice.SMART_NOTICE_ANIMATION_DELAY,
+                            5000L
+                        )
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+
+                ValueEditDialog(
+                    visible = valueEditDialogState,
+                    unit = "ms",
+                    value = duration.toString()
+                ) {
+                    if (it.isBlank()) {
+                        valueEditDialogState = false
+                        return@ValueEditDialog
+                    }
+                    try {
+                        val long = it.toLong()
+                        if (long !in 500L..10_000L) {
+                            Toast.makeText(
+                                activity,
+                                R.string.text_value_is_out_bounds,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            duration = long
+                            valueEditDialogState = false
+
+                            SmartNoticeWindow.animatorDelay.value = duration
+                            storageStore.putLong(
+                                Const.SmartNotice.SMART_NOTICE_ANIMATION_DELAY,
+                                duration
+                            )
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        Toast.makeText(
+                            activity,
+                            String.format(
+                                activity.getString(R.string.text_throws_error),
+                                e.message
+                            ),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+
+                FolderItem(
+                    title = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = stringResource(R.string.text_smart_notice_delay_duration),
+                            )
+                            Text(
+                                text = String.format("%dms", duration),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.clickable(
+                                    indication = null,
+                                    interactionSource = null
+                                ) {
+                                    valueEditDialogState = true
+                                }
+                            )
+                        }
+                    },
+                    subtitle = {
+                        Slider(
+                            modifier = Modifier.fillMaxWidth(),
+                            value = duration.toFloat(),
+                            onValueChange = {
+                                duration = it.roundToLong()
+                                SmartNoticeWindow.animatorDelay.value = duration
+                                storageStore.putLong(
+                                    Const.SmartNotice.SMART_NOTICE_ANIMATION_DELAY,
+                                    duration
+                                )
+                            },
+                            onValueChangeFinished = {
+
+                            },
+                            valueRange = 500f..10_000f,
+                        )
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ValueEditDialog(
+    visible: Boolean,
+    value: String,
+    unit: String = "dp",
+    onDismissRequest: (String) -> Unit,
+) {
+    if (visible) {
+        var text by rememberSaveable { mutableStateOf("") }
+
+        AlertDialog(
+            onDismissRequest = { onDismissRequest("") },
+            title = {
+                Text(
+                    text = stringResource(R.string.text_edit_value)
+                )
+            },
+            text = {
+                TextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = text,
+                    onValueChange = {
+                        text = it
+                    },
+                    label = {
+                        Text(
+                            text = stringResource(R.string.text_please_input_value)
+                        )
+                    },
+                    placeholder = {
+                        Text(
+                            text = buildString {
+                                append(value)
+                                append(unit)
+                            }
+                        )
+                    },
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onDismissRequest(text)
+                    }
+                ) {
+                    Text(
+                        text = stringResource(R.string.text_confirm)
+                    )
+                }
+            },
+            dismissButton = {
+                FilledTonalButton(
+                    onClick = {
+                        onDismissRequest("")
+                    }
+                ) {
+                    Text(
+                        text = stringResource(R.string.text_cancel)
+                    )
+                }
+            }
+        )
     }
 }

@@ -7,6 +7,7 @@ import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Rect
+import android.view.Gravity
 import android.view.WindowManager
 import android.view.animation.OvershootInterpolator
 import android.widget.RelativeLayout
@@ -20,13 +21,14 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import io.github.lumkit.tweak.Main
+import io.github.lumkit.tweak.R
 import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.TweakApplication.Companion.density
 import io.github.lumkit.tweak.common.util.getStatusBarHeight
 import io.github.lumkit.tweak.data.CutoutRect
-import io.github.lumkit.tweak.data.FloatSize
 import io.github.lumkit.tweak.model.Const
 import io.github.lumkit.tweak.ui.local.json
 import io.github.lumkit.tweak.ui.theme.AppTheme
@@ -34,7 +36,6 @@ import io.github.lumkit.tweak.ui.token.SmartNoticeCapsuleDefault
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filter
@@ -42,8 +43,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.min
 import kotlin.math.roundToInt
-import kotlin.random.Random
 
 @SuppressLint("ViewConstructor")
 class SmartNoticeWindow(
@@ -53,6 +54,19 @@ class SmartNoticeWindow(
 ) : CardView(context) {
 
     companion object {
+
+        enum class Gravity(
+            val gravity: Int,
+        ) {
+            Start(android.view.Gravity.START), Center(android.view.Gravity.CENTER), End(android.view.Gravity.END);
+
+            fun asString(): String = when (this) {
+                Start -> TweakApplication.application.getString(R.string.text_cutout_gravity_start)
+                Center -> TweakApplication.application.getString(R.string.text_cutout_gravity_center)
+                End -> TweakApplication.application.getString(R.string.text_cutout_gravity_end)
+            }
+        }
+
         private val _cutoutRectListState by lazy {
             MutableStateFlow(
                 json.decodeFromString<List<CutoutRect>>(
@@ -84,19 +98,20 @@ class SmartNoticeWindow(
         )
 
         private val _islandCustomSize by lazy {
-            val jsonStr = TweakApplication.shared.getString(
-                Const.SmartNotice.SMART_NOTICE_CUSTOM_SIZE,
-                null
-            )
-            MutableStateFlow(
-                if (jsonStr == null) {
-                    Size.Zero
-                } else {
-                    json.decodeFromString<FloatSize>(jsonStr).let {
-                        Size(it.width, it.height)
-                    }
-                }
-            )
+            with(density) {
+                MutableStateFlow(
+                    Size(
+                        TweakApplication.shared.getFloat(
+                            Const.SmartNotice.SMART_NOTICE_WIDTH,
+                            SmartNoticeCapsuleDefault.CapsuleWidth.value
+                        ).dp.toPx(),
+                        TweakApplication.shared.getFloat(
+                            Const.SmartNotice.SMART_NOTICE_HEIGHT,
+                            SmartNoticeCapsuleDefault.CapsuleHeight.value
+                        ).dp.toPx()
+                    )
+                )
+            }
         }
         val islandCustomSize by lazy {
             _islandCustomSize.asStateFlow()
@@ -172,6 +187,30 @@ class SmartNoticeWindow(
             }
 
             launch {
+                _islandCustomSize.filter { it != Size.Zero }.collect {
+                    withContext(Dispatchers.Main) {
+                        if (TweakApplication.shared.getFloat(
+                                Const.SmartNotice.SMART_NOTICE_CUTOUT_RADIUS,
+                                -1f
+                            ) == -1f
+                        ) {
+                            radius = min(it.width, it.height) / 2f
+                            TweakApplication.shared.edit {
+                                putFloat(
+                                    Const.SmartNotice.SMART_NOTICE_CUTOUT_RADIUS,
+                                    radius.toDp().value
+                                )
+                            }
+                        }
+                        TweakApplication.shared.edit {
+                            putFloat(Const.SmartNotice.SMART_NOTICE_WIDTH, it.width.toDp().value)
+                            putFloat(Const.SmartNotice.SMART_NOTICE_HEIGHT, it.height.toDp().value)
+                        }
+                    }
+                }
+            }
+
+            launch {
                 animatorDelay.collect {
                     TweakApplication.shared.edit(
                         commit = true
@@ -198,7 +237,8 @@ class SmartNoticeWindow(
         displayed = false
     }
 
-    private val animatorSetEnd = AnimatorSet()
+    private var animatorSetEnd: AnimatorSet? = null
+    private var animatorSetStart: AnimatorSet? = null
 
     @SuppressLint("ObjectAnimatorBinding")
     fun show() {
@@ -207,15 +247,38 @@ class SmartNoticeWindow(
                 val size = _islandCustomSize.filter { it != Size.Zero }
                     .first()
                 withContext(Dispatchers.Main) {
-                    radius = size.height / 2f
+                    animatorSetStart?.apply {
+                        cancel()
+                        removeAllListeners()
+                    }
+                    animatorSetStart = AnimatorSet()
 
-                    try {
-                        windowLayoutParams.y =
-                            getStatusBarHeight() - size.height.roundToInt() - SmartNoticeCapsuleDefault.CapsulePaddingTop.roundToPx() / 2
-                    } catch (_: Exception) {
+                    animatorSetEnd?.apply {
+                        cancel()
+                        removeAllListeners()
+                    }
+                    animatorSetEnd = AnimatorSet()
+
+                    val localRadius = TweakApplication.shared.getFloat(
+                        Const.SmartNotice.SMART_NOTICE_CUTOUT_RADIUS,
+                        -1f
+                    )
+                    radius = if (localRadius == -1f) {
+                        size.height / 2f
+                    } else {
+                        localRadius.dp.toPx()
                     }
 
-                    val animatorSetStart = AnimatorSet()
+                    val localOffsetY = TweakApplication.shared.getFloat(
+                        Const.SmartNotice.SMART_NOTICE_OFFSET_Y,
+                        -1f
+                    )
+
+                    windowLayoutParams.y = if (localOffsetY == -1f) {
+                        getStatusBarHeight() - size.height.roundToInt() - SmartNoticeCapsuleDefault.CapsulePaddingTop.roundToPx() / 2
+                    } else {
+                        localOffsetY.dp.roundToPx()
+                    }
 
                     val width = ObjectAnimator.ofFloat(
                         this@SmartNoticeWindow,
@@ -261,9 +324,9 @@ class SmartNoticeWindow(
                         1f,
                     )
 
-                    animatorSetStart.playTogether(width, height, alpha)
-                    animatorSetStart.duration = animatorDuration.value
-                    animatorSetStart.addListener(
+                    animatorSetStart?.playTogether(width, height, alpha)
+                    animatorSetStart?.duration = animatorDuration.value
+                    animatorSetStart?.addListener(
                         object : AnimatorListenerAdapter() {
                             override fun onAnimationEnd(animation: Animator) {
                                 super.onAnimationEnd(animation)
@@ -272,7 +335,7 @@ class SmartNoticeWindow(
                         }
                     )
 
-                    animatorSetStart.start()
+                    animatorSetStart?.start()
                 }
             }
         }
@@ -282,9 +345,18 @@ class SmartNoticeWindow(
     fun hide() {
         displayed = false
 
-        animatorSetEnd.end()
-        animatorSetEnd.cancel()
-        animatorSetEnd.removeAllListeners()
+        animatorSetStart?.apply {
+            cancel()
+            removeAllListeners()
+        }
+        animatorSetStart = AnimatorSet()
+
+        animatorSetEnd?.apply {
+            cancel()
+            removeAllListeners()
+        }
+        animatorSetStart = null
+        animatorSetEnd = AnimatorSet()
 
         val width = ObjectAnimator.ofFloat(
             this@SmartNoticeWindow,
@@ -323,20 +395,20 @@ class SmartNoticeWindow(
             0f,
         )
 
-        animatorSetEnd.playTogether(width, height, alpha)
-        animatorSetEnd.duration = animatorDuration.value
+        animatorSetEnd?.playTogether(width, height, alpha)
+        animatorSetEnd?.duration = animatorDuration.value
 
-        animatorSetEnd.start()
+        animatorSetEnd?.start()
     }
 
     abstract class SmartNoticeWindowScope {
-        abstract val cutoutRect: Rect
+        abstract val cutoutRect: Rect?
         abstract val startSize: Size
         abstract val density: Density
     }
 
-    private val startSet = AnimatorSet()
-    private val endSet = AnimatorSet()
+    private var startSet: AnimatorSet? = null
+    private var endSet: AnimatorSet? = null
 
     @SuppressLint("ObjectAnimatorBinding")
     fun toast(
@@ -344,12 +416,14 @@ class SmartNoticeWindow(
         content: @Composable Density.(SmartNoticeWindow) -> Unit,
     ) {
         try {
-            startSet.pause()
-            startSet.cancel()
-            startSet.removeAllListeners()
-            endSet.pause()
-            endSet.cancel()
-            endSet.removeAllListeners()
+            startSet?.cancel()
+            startSet?.removeAllListeners()
+
+            endSet?.cancel()
+            endSet?.removeAllListeners()
+
+            startSet = AnimatorSet()
+            endSet = AnimatorSet()
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -359,21 +433,25 @@ class SmartNoticeWindow(
                 val size = _islandCustomSize.filter { it != Size.Zero }
                     .first()
 
-                val rect = _cutoutRectListState.filter { it.isNotEmpty() }
+                val rect = _cutoutRectListState
                     .map {
-                        val first = it.first()
-                        val last = it.last()
-                        Rect(
-                            first.left,
-                            first.top,
-                            last.right,
-                            last.bottom
-                        )
+                        if (it.isEmpty()) {
+                            null
+                        } else {
+                            val first = it.first()
+                            val last = it.last()
+                            Rect(
+                                first.left,
+                                first.top,
+                                last.right,
+                                last.bottom
+                            )
+                        }
                     }.first()
 
                 val targetSize = componentSize(
                     object : SmartNoticeWindowScope() {
-                        override val cutoutRect: Rect
+                        override val cutoutRect: Rect?
                             get() = rect
                         override val startSize: Size
                             get() = size
@@ -449,9 +527,13 @@ class SmartNoticeWindow(
                     )
                     composeViewAlphaStart.duration = animatorDuration.value
 
-                    startSet.playTogether(startChargeWidth, startChargeHeight, composeViewAlphaStart)
-                    startSet.interpolator = OvershootInterpolator()
-                    startSet.addListener(
+                    startSet?.playTogether(
+                        startChargeWidth,
+                        startChargeHeight,
+                        composeViewAlphaStart
+                    )
+                    startSet?.interpolator = OvershootInterpolator()
+                    startSet?.addListener(
                         object : AnimatorListenerAdapter() {
                             override fun onAnimationEnd(animation: Animator) {
                                 super.onAnimationEnd(animation)
@@ -509,29 +591,105 @@ class SmartNoticeWindow(
                                 )
                                 composeViewAlphaEnd.duration = animatorDuration.value
 
-                                endSet.playTogether(
+                                endSet?.playTogether(
                                     endChargeWidth,
                                     endChargeHeight,
                                     composeViewAlphaEnd
                                 )
 
-                                endSet.startDelay = animatorDelay.value
-                                endSet.interpolator = OvershootInterpolator()
-                                endSet.start()
+                                endSet?.startDelay = animatorDelay.value
+                                endSet?.interpolator = OvershootInterpolator()
+                                endSet?.start()
                             }
                         }
                     )
-                    startSet.start()
+                    startSet?.start()
                 }
             }
         }
     }
 
+    @SuppressLint("ObjectAnimatorBinding")
     fun minimize() {
-        try {
-            endSet.end()
-        } catch (e: Exception) {
-            e.printStackTrace()
+        startSet?.cancel()
+        startSet?.removeAllListeners()
+
+        startSet = null
+
+        endSet?.cancel()
+        endSet?.removeAllListeners()
+
+        endSet = AnimatorSet()
+
+        viewCoroutine.launch {
+            val size = _islandCustomSize.filter { it != Size.Zero }
+                .first()
+
+            withContext(Dispatchers.Main) {
+
+                val endChargeWidth = ObjectAnimator.ofFloat(
+                    this@SmartNoticeWindow,
+                    "width",
+                    windowLayoutParams.width.toFloat(),
+                    size.width
+                ).apply {
+                    addUpdateListener {
+                        val roundToInt =
+                            (it.animatedValue as Float).roundToInt()
+                        windowLayoutParams.width = roundToInt
+
+                        try {
+                            windowManager.updateViewLayout(
+                                this@SmartNoticeWindow,
+                                windowLayoutParams
+                            )
+                        } catch (_: Exception) {
+
+                        }
+                    }
+                }
+                endChargeWidth.duration = animatorDuration.value
+
+                val endChargeHeight = ObjectAnimator.ofFloat(
+                    this@SmartNoticeWindow,
+                    "height",
+                    windowLayoutParams.height.toFloat(),
+                    size.height
+                ).apply {
+                    addUpdateListener {
+                        val roundToInt =
+                            (it.animatedValue as Float).roundToInt()
+                        windowLayoutParams.height = roundToInt
+
+                        try {
+                            windowManager.updateViewLayout(
+                                this@SmartNoticeWindow,
+                                windowLayoutParams
+                            )
+                        } catch (_: Exception) {
+
+                        }
+                    }
+                }
+                endChargeHeight.duration = animatorDuration.value
+
+                val composeViewAlphaEnd = ObjectAnimator.ofFloat(
+                    animationContainer,
+                    "alpha",
+                    animationContainer.alpha,
+                    0f
+                )
+                composeViewAlphaEnd.duration = animatorDuration.value
+
+                endSet?.playTogether(
+                    endChargeWidth,
+                    endChargeHeight,
+                    composeViewAlphaEnd
+                )
+
+                endSet?.interpolator = OvershootInterpolator()
+                endSet?.start()
+            }
         }
     }
 }

@@ -57,10 +57,10 @@ import io.github.lumkit.tweak.model.Const
 import io.github.lumkit.tweak.ui.lifecycle.ComposeViewLifecycleOwner
 import io.github.lumkit.tweak.ui.screen.ScreenRoute
 import io.github.lumkit.tweak.ui.screen.notice.SmartNoticeViewModel
+import io.github.lumkit.tweak.ui.token.SmartNoticeCapsuleDefault
 import io.github.lumkit.tweak.ui.view.SmartNoticeWindow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import kotlin.random.Random
 
 val LocalSmartNoticeView = staticCompositionLocalOf<ComposeView> { error("not provided.") }
 val LocalSmartNoticeWindowManager =
@@ -83,6 +83,14 @@ class SmartNoticeService : Service() {
         // 充电变化
         const val ACTION_POWER_CONNECTED = "ACTION_POWER_CONNECTED"
         const val ACTION_POWER_DISCONNECTED = "ACTION_POWER_DISCONNECTED"
+
+        // 属性变化
+        const val ACTION_MARGIN_TOP = "ACTION_MARGIN_TOP"
+        const val ACTION_MARGIN_START = "ACTION_MARGIN_START"
+        const val ACTION_CUTOUT_GRAVITY = "ACTION_CUTOUT_GRAVITY"
+        const val ACTION_CUTOUT_WIDTH = "ACTION_CUTOUT_WIDTH"
+        const val ACTION_CUTOUT_HEIGHT = "ACTION_CUTOUT_HEIGHT"
+        const val ACTION_CUTOUT_RADIUS = "ACTION_CUTOUT_RADIUS"
 
         fun canStartSmartNotice(): Boolean {
             val switch =
@@ -111,6 +119,11 @@ class SmartNoticeService : Service() {
                 delay(SmartNoticeWindow.animatorDuration.value)
             }
             stopService(intent)
+        }
+
+        suspend fun Context.restartSmartNotice() {
+            stopSmartNotice(true)
+            startSmartNotice()
         }
 
         fun Context.showNotificationStatus(show: Boolean) {
@@ -144,6 +157,60 @@ class SmartNoticeService : Service() {
             if (canStartSmartNotice() && isRunning() && runBlocking { SmartNoticeViewModel.checkAccessibilityService() }) {
                 val intent = Intent(this, SmartNoticeService::class.java)
                 intent.action = action
+                startService(intent)
+            }
+        }
+
+        fun Context.updateTop(position: Float) {
+            if (canStartSmartNotice() && isRunning() && runBlocking { SmartNoticeViewModel.checkAccessibilityService() }) {
+                val intent = Intent(this, SmartNoticeService::class.java)
+                intent.action = ACTION_MARGIN_TOP
+                intent.putExtra("y", position)
+                startService(intent)
+            }
+        }
+
+        fun Context.updateStart(position: Float) {
+            if (canStartSmartNotice() && isRunning() && runBlocking { SmartNoticeViewModel.checkAccessibilityService() }) {
+                val intent = Intent(this, SmartNoticeService::class.java)
+                intent.action = ACTION_MARGIN_START
+                intent.putExtra("x", position)
+                startService(intent)
+            }
+        }
+
+        fun Context.updateCutoutGravity(gravity: Int) {
+            if (canStartSmartNotice() && isRunning() && runBlocking { SmartNoticeViewModel.checkAccessibilityService() }) {
+                val intent = Intent(this, SmartNoticeService::class.java)
+                intent.action = ACTION_CUTOUT_GRAVITY
+                intent.putExtra("gravity", gravity)
+                startService(intent)
+            }
+        }
+
+        fun Context.updateCutoutWidth(widthDp: Float) {
+            if (canStartSmartNotice() && isRunning() && runBlocking { SmartNoticeViewModel.checkAccessibilityService() }) {
+                val intent = Intent(this, SmartNoticeService::class.java)
+                intent.action = ACTION_CUTOUT_WIDTH
+                intent.putExtra("width", widthDp)
+                startService(intent)
+            }
+        }
+
+        fun Context.updateCutoutHeight(heightDp: Float) {
+            if (canStartSmartNotice() && isRunning() && runBlocking { SmartNoticeViewModel.checkAccessibilityService() }) {
+                val intent = Intent(this, SmartNoticeService::class.java)
+                intent.action = ACTION_CUTOUT_HEIGHT
+                intent.putExtra("height", heightDp)
+                startService(intent)
+            }
+        }
+
+        fun Context.updateCutoutRadius(radiusDp: Float) {
+            if (canStartSmartNotice() && isRunning() && runBlocking { SmartNoticeViewModel.checkAccessibilityService() }) {
+                val intent = Intent(this, SmartNoticeService::class.java)
+                intent.action = ACTION_CUTOUT_RADIUS
+                intent.putExtra("radius", radiusDp)
                 startService(intent)
             }
         }
@@ -284,7 +351,17 @@ class SmartNoticeService : Service() {
         params.format = PixelFormat.TRANSLUCENT
         params.width = LayoutParams.WRAP_CONTENT
         params.height = LayoutParams.WRAP_CONTENT
-        params.gravity = Gravity.TOP or Gravity.CENTER
+        params.gravity = try {
+            SmartNoticeWindow.Companion.Gravity.entries[
+                TweakApplication.shared.getInt(
+                    Const.SmartNotice.SMART_NOTICE_CUTOUT_POSITION,
+                    SmartNoticeWindow.Companion.Gravity.Center.ordinal
+                )
+            ].gravity
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Gravity.CENTER
+        } or Gravity.TOP
         params.flags = LayoutParams.FLAG_NOT_TOUCH_MODAL or
                 LayoutParams.FLAG_NOT_FOCUSABLE or
                 LayoutParams.FLAG_LAYOUT_IN_SCREEN or
@@ -476,6 +553,86 @@ class SmartNoticeService : Service() {
                     }
                 ) {
                     Charge(false, it)
+                }
+            }
+
+            ACTION_MARGIN_TOP -> {
+                val offsetY = intent.getFloatExtra("y", 0f)
+                try {
+                    params.y = with(TweakApplication.density) {
+                        offsetY.dp.roundToPx()
+                    }
+                    windowManager?.updateViewLayout(
+                        smartNoticeView,
+                        params,
+                    )
+                }catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            ACTION_MARGIN_START -> {
+                val offsetX = intent.getFloatExtra("x", 0f)
+                try {
+                    params.x = with(TweakApplication.density) {
+                        offsetX.dp.roundToPx()
+                    }
+                    windowManager?.updateViewLayout(
+                        smartNoticeView,
+                        params,
+                    )
+                }catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            ACTION_CUTOUT_GRAVITY -> {
+                val gravity = intent.getIntExtra("gravity", Gravity.CENTER)
+                try {
+                    params.gravity = gravity or Gravity.TOP
+                    windowManager?.updateViewLayout(
+                        smartNoticeView,
+                        params
+                    )
+                }catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            ACTION_CUTOUT_WIDTH -> {
+                val width = intent.getFloatExtra("width", SmartNoticeCapsuleDefault.CapsuleWidth.value)
+                try {
+                    params.width = with(TweakApplication.density) {
+                        width.dp.roundToPx()
+                    }
+                    windowManager?.updateViewLayout(
+                        smartNoticeView,
+                        params,
+                    )
+                }catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            ACTION_CUTOUT_HEIGHT -> {
+                val height = intent.getFloatExtra("height", SmartNoticeCapsuleDefault.CapsuleHeight.value)
+                try {
+                    params.height = with(TweakApplication.density) {
+                        height.dp.roundToPx()
+                    }
+                    windowManager?.updateViewLayout(
+                        smartNoticeView,
+                        params,
+                    )
+                }catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            ACTION_CUTOUT_RADIUS -> {
+                with(TweakApplication.density) {
+                    val radius = intent.getFloatExtra("radius", SmartNoticeCapsuleDefault.CapsuleHeight.value / 2f)
+                    smartNoticeView?.radius = radius.dp.toPx()
                 }
             }
         }

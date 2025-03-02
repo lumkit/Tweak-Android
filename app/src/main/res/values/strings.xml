@@ -40,5 +40,24 @@
     <string name="text_decscribe_accessibility_service">用于将灵动通知显示到锁屏页面</string>
     <string name="label_accessibility_service">Tweak - 辅助服务</string>
     <string name="text_accessibility_service_is_disabled">无障碍服务未打开，无法启动灵动通知</string>
+    <string name="text_smart_notice_set_position">调整属性</string>
+    <string name="text_smart_notice_set_position_tips">自定义灵动通知大小、位置以及其他属性</string>
+    <string name="text_position_top">顶边距</string>
+    <string name="text_value_is_out_bounds">值超出范围！</string>
+    <string name="text_throws_error">发生错误：%s</string>
+    <string name="text_edit_value">精确修改</string>
+    <string name="text_please_input_value">请输入值（不需要单位）</string>
+    <string name="text_position_start">左边距</string>
+    <string name="text_cutout_position">挖孔适配方案</string>
+    <string name="text_cutout_position_tips">无挖孔屏幕选居中最合适</string>
+    <string name="text_cutout_gravity_start">左挖孔</string>
+    <string name="text_cutout_gravity_center">居中</string>
+    <string name="text_cutout_gravity_end">右挖孔</string>
+    <string name="text_smart_notice_width">宽度</string>
+    <string name="text_smart_notice_height">高度</string>
+    <string name="text_smart_notice_radius">圆角</string>
+    <string name="text_export_configs">导出配置</string>
+    <string name="text_smart_notice_animation_duration">动画时长</string>
+    <string name="text_smart_notice_delay_duration">消息显示时长</string>
 
 </resources>

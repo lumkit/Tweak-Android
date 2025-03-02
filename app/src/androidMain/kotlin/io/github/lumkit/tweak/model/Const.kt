@@ -36,13 +36,23 @@ object Const {
         const val SMART_NOTICE_GAME_MODE = "smart_notice_game_mode"
 
         // 宽高属性
-        const val SMART_NOTICE_WIDTH = "smart_notice_width"
-        const val SMART_NOTICE_HEIGHT = "smart_notice_height"
         const val SMART_NOTICE_PADDING = "smart_notice_padding"
         const val SMART_NOTICE_CUTOUT_RECT_LIST = "smart_notice_cutout_rect_list"
-        const val SMART_NOTICE_CUSTOM_SIZE = "smart_notice_custom_size"
         const val SMART_NOTICE_ANIMATION_DELAY = "smart_notice_animation_delay"
         const val SMART_NOTICE_ANIMATION_DURATION = "smart_notice_animation_duration"
 
+        const val SMART_NOTICE_WIDTH = "smart_notice_width"
+        const val SMART_NOTICE_HEIGHT = "smart_notice_height"
+
+        const val SMART_NOTICE_OFFSET_Y = "smart_notice_offset_y"
+        const val SMART_NOTICE_OFFSET_X = "smart_notice_offset_x"
+
+        // 挖孔位置
+        const val SMART_NOTICE_CUTOUT_POSITION = "smart_notice_cutout_position"
+
+        const val SMART_NOTICE_CUTOUT_RADIUS = "smart_notice_cutout_radius"
+
+        // 息屏常显
+        const val SMART_NOTICE_ALWAYS_SHOW = "smart_notice_always_show"
     }
 }
