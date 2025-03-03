@@ -409,6 +409,7 @@ private fun UpdateColorSchemeDialog(
         var loading by rememberSaveable { mutableStateOf(false) }
 
         AlertDialog(
+            modifier = Modifier.padding(vertical = 28.dp),
             onDismissRequest = { updateColorSchemeDialogState.value = false },
             title = {
                 Text(text = stringResource(R.string.text_custom_color_scheme_update))
@@ -629,6 +630,7 @@ private fun ColorPickerDialog(
     }
 
     AlertDialog(
+        modifier = Modifier.padding(vertical = 28.dp),
         onDismissRequest = onDismissRequest,
         title = {
             Text(text = kProperty1.name)
@@ -1311,6 +1313,7 @@ private fun UpdateDialog(
 
     if (hasUpdate.value) {
         AlertDialog(
+            modifier = Modifier.padding(vertical = 28.dp),
             onDismissRequest = {
                 hasUpdate.value = false
             },

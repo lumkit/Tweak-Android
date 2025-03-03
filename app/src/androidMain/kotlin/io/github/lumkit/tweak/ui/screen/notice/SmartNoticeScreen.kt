@@ -3,6 +3,7 @@ package io.github.lumkit.tweak.ui.screen.notice
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.ClipData
 import android.content.Intent
 import android.provider.Settings
 import android.widget.Toast
@@ -66,6 +67,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -79,10 +82,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.lumkit.tweak.LocalSharedTransitionScope
 import io.github.lumkit.tweak.R
+import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.common.shell.provide.ReusableShells
 import io.github.lumkit.tweak.common.util.ServiceUtils
 import io.github.lumkit.tweak.common.util.getDiveSize
 import io.github.lumkit.tweak.common.util.getStatusBarHeight
+import io.github.lumkit.tweak.data.SmartNoticeProperties
 import io.github.lumkit.tweak.model.Const
 import io.github.lumkit.tweak.services.SmartNoticeService
 import io.github.lumkit.tweak.services.SmartNoticeService.Companion.ACTION_POWER_CONNECTED
@@ -90,6 +95,7 @@ import io.github.lumkit.tweak.services.SmartNoticeService.Companion.ACTION_POWER
 import io.github.lumkit.tweak.services.SmartNoticeService.Companion.chargeChange
 import io.github.lumkit.tweak.services.SmartNoticeService.Companion.disableGameMode
 import io.github.lumkit.tweak.services.SmartNoticeService.Companion.enableGameMode
+import io.github.lumkit.tweak.services.SmartNoticeService.Companion.reloadProperties
 import io.github.lumkit.tweak.services.SmartNoticeService.Companion.showNotificationStatus
 import io.github.lumkit.tweak.services.SmartNoticeService.Companion.startSmartNotice
 import io.github.lumkit.tweak.services.SmartNoticeService.Companion.stopSmartNotice
@@ -108,14 +114,18 @@ import io.github.lumkit.tweak.ui.component.ScreenScaffold
 import io.github.lumkit.tweak.ui.component.SharedTransitionText
 import io.github.lumkit.tweak.ui.local.LocalStorageStore
 import io.github.lumkit.tweak.ui.local.StorageStore
+import io.github.lumkit.tweak.ui.local.json
 import io.github.lumkit.tweak.ui.screen.notice.SmartNoticeViewModel.Companion.gotoNotificationAccessSetting
 import io.github.lumkit.tweak.ui.token.SmartNoticeCapsuleDefault
 import io.github.lumkit.tweak.ui.view.SmartNoticeWindow
+import io.github.lumkit.tweak.util.Aes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.encodeToString
+import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 import kotlin.random.Random
@@ -364,6 +374,7 @@ private fun PermissionItem(
                     Manifest.permission.BIND_NOTIFICATION_LISTENER_SERVICE -> {
                         context.gotoNotificationAccessSetting()
                     }
+
                     Manifest.permission.SYSTEM_ALERT_WINDOW -> {
                         alertLauncher.launch(
                             Intent(
@@ -372,6 +383,7 @@ private fun PermissionItem(
                             )
                         )
                     }
+
                     Manifest.permission.BIND_ACCESSIBILITY_SERVICE -> {
                         enabled = false
                         coroutineScope.launch {
@@ -388,6 +400,7 @@ private fun PermissionItem(
                             }
                         }
                     }
+
                     else -> {
                         launcher.launch(permissionState.permission)
                     }
@@ -626,30 +639,102 @@ fun ContentList(
                 dialogState = false
             }
         }
+    }
 
-        // 测试用
-        Button(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            onClick = {
-                activity.chargeChange(
-                    if (Random.nextInt() % 2 == 0) {
-                        ACTION_POWER_CONNECTED
-                    } else {
-                        ACTION_POWER_DISCONNECTED
-                    }
+    Spacer(modifier = Modifier.height(8.dp))
+
+    GroupDetail(
+        title = {
+            Text(
+                text = stringResource(R.string.text_notice_observer)
+            )
+        }
+    ) {
+        // 充电
+        run {
+            var observed by rememberSaveable {
+                mutableStateOf(
+                    storageStore.getBoolean(
+                        Const.SmartNotice.Observe.SMART_NOTICE_OBSERVE_CHARGE,
+                        true
+                    )
                 )
             }
-        ) {
-            Text(
-                text = "动画测试"
+
+            var attrDialog by rememberSaveable { mutableStateOf(false) }
+
+            DetailItem(
+                onClick = {
+                    attrDialog = true
+                },
+                title = {
+                    Text(
+                        text = stringResource(R.string.text_smart_notice_observe_charge)
+                    )
+                },
+                subTitle = {
+                    Text(
+                        text = stringResource(R.string.text_smart_notice_observe_charge_tips)
+                    )
+                },
+                actions = {
+                    Switch(
+                        checked = observed,
+                        onCheckedChange = {
+                            observed = it
+                            storageStore.putBoolean(
+                                Const.SmartNotice.Observe.SMART_NOTICE_OBSERVE_CHARGE,
+                                it
+                            )
+                        }
+                    )
+                }
             )
         }
 
-        Spacer(
-            modifier = Modifier.height(8.dp)
-        )
+        // 音乐
+        run {
+            var observed by rememberSaveable {
+                mutableStateOf(
+                    storageStore.getBoolean(
+                        Const.SmartNotice.Observe.SMART_NOTICE_OBSERVE_MUSIC,
+                        false
+                    )
+                )
+            }
+
+            var attrDialog by rememberSaveable { mutableStateOf(false) }
+
+            DetailItem(
+                enabled = false,
+                onClick = {
+                    attrDialog = true
+                },
+                title = {
+                    Text(
+                        text = stringResource(R.string.text_smart_notice_observe_music)
+                    )
+                },
+                subTitle = {
+                    Text(
+                        text = stringResource(R.string.text_smart_notice_observe_music_tips)
+                    )
+                },
+                actions = {
+                    Switch(
+                        enabled = false,
+                        checked = observed,
+                        onCheckedChange = {
+                            observed = it
+                            storageStore.putBoolean(
+                                Const.SmartNotice.Observe.SMART_NOTICE_OBSERVE_MUSIC,
+                                it
+                            )
+                        }
+                    )
+                }
+            )
+        }
     }
 }
 
@@ -662,6 +747,7 @@ private fun SetNoticeFieldDialog(
 ) {
     if (visible) {
         AlertDialog(
+            modifier = Modifier.padding(vertical = 28.dp),
             onDismissRequest = onDismissRequest,
             title = {
                 Text(
@@ -669,7 +755,7 @@ private fun SetNoticeFieldDialog(
                 )
             },
             text = {
-                SetNoticeFieldBox(activity, storageStore)
+                SetNoticeFieldBox(activity, storageStore, onDismissRequest)
             },
             confirmButton = {
                 Button(
@@ -697,7 +783,11 @@ private fun SetNoticeFieldDialog(
 
 @SuppressLint("DefaultLocale")
 @Composable
-private fun SetNoticeFieldBox(activity: ComponentActivity, storageStore: StorageStore) {
+private fun SetNoticeFieldBox(
+    activity: ComponentActivity,
+    storageStore: StorageStore,
+    onDismissRequest: () -> Unit
+) {
 
     val deviceSize = remember { activity.getDiveSize() }
     val density = LocalDensity.current
@@ -1480,9 +1570,378 @@ private fun SetNoticeFieldBox(activity: ComponentActivity, storageStore: Storage
                     }
                 )
             }
+
+            // 导入配置
+            run {
+                var dialogState by rememberSaveable { mutableStateOf(false) }
+
+                TextButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = {
+                        dialogState = true
+                    },
+                ) {
+                    Text(
+                        text = stringResource(R.string.text_export_configs)
+                    )
+                }
+
+                ExportDialog(dialogState, activity, storageStore) { dialogState = false }
+            }
+
+            run {
+                var dialogState by rememberSaveable { mutableStateOf(false) }
+                TextButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = {
+                        dialogState = true
+                    }
+                ) {
+                    Text(
+                        text = stringResource(R.string.text_import_configs)
+                    )
+                }
+
+                ImportDialog(
+                    dialogState,
+                    activity,
+                    storageStore,
+                    onDismissRequest,
+                ) { dialogState = false }
+            }
         }
     }
 }
+
+@Composable
+private fun ExportDialog(
+    visible: Boolean,
+    activity: ComponentActivity,
+    storageStore: StorageStore,
+    onDismissRequest: () -> Unit
+) {
+    if (visible) {
+        val coroutineScope = rememberCoroutineScope { Dispatchers.IO }
+        var label by rememberSaveable { mutableStateOf("") }
+        val density = LocalDensity.current
+        val clipboard = LocalClipboard.current
+
+        AlertDialog(
+            onDismissRequest = onDismissRequest,
+            title = {
+                Text(
+                    text = stringResource(R.string.text_export_configs)
+                )
+            },
+            text = {
+                TextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = label,
+                    onValueChange = {
+                        label = it
+                    },
+                    singleLine = true,
+                    label = {
+                        Text(
+                            text = stringResource(R.string.text_input_label)
+                        )
+                    }
+                )
+            },
+            confirmButton = {
+                var enabled by rememberSaveable { mutableStateOf(true) }
+                Button(
+                    onClick = {
+                        coroutineScope.launch {
+                            enabled = false
+                            val size = SmartNoticeWindow.islandCustomSize.filter { it != Size.Zero }
+                                .first()
+                            val properties = with(density) {
+                                SmartNoticeProperties(
+                                    label = label,
+                                    gravity = storageStore.getInt(
+                                        Const.SmartNotice.SMART_NOTICE_CUTOUT_POSITION,
+                                        SmartNoticeWindow.Companion.Gravity.Center.ordinal
+                                    ),
+                                    x = storageStore.getFloat(
+                                        Const.SmartNotice.SMART_NOTICE_OFFSET_X,
+                                        0f
+                                    ),
+                                    y = storageStore.getFloat(
+                                        Const.SmartNotice.SMART_NOTICE_OFFSET_Y,
+                                        (getStatusBarHeight() - size.height.roundToInt() - SmartNoticeCapsuleDefault.CapsulePaddingTop.roundToPx() / 2f).toDp().value
+                                    ),
+                                    width = size.width.toDp().value,
+                                    height = size.height.toDp().value,
+                                    radius = storageStore.getFloat(
+                                        Const.SmartNotice.SMART_NOTICE_CUTOUT_RADIUS,
+                                        (min(size.width, size.height) / 2f).toDp().value
+                                    ),
+                                    duration = storageStore.getLong(
+                                        Const.SmartNotice.SMART_NOTICE_ANIMATION_DURATION,
+                                        550L
+                                    ),
+                                    delay = storageStore.getLong(
+                                        Const.SmartNotice.SMART_NOTICE_ANIMATION_DELAY,
+                                        5000L
+                                    )
+                                )
+                            }
+
+                            val jsonText = json.encodeToString(properties)
+                            val encrypt = Aes.encrypt(TweakApplication.application, jsonText)
+
+                            withContext(Dispatchers.Main) {
+                                clipboard.setClipEntry(
+                                    ClipEntry(
+                                        clipData = ClipData.newPlainText(
+                                            label,
+                                            buildString {
+                                                append("tweak-smart-notice://")
+                                                append(encrypt)
+                                            }
+                                        )
+                                    )
+                                )
+
+                                Toast.makeText(
+                                    activity,
+                                    R.string.text_configs_exported,
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                            enabled = true
+                            onDismissRequest()
+                        }
+                    },
+                    enabled = enabled
+                ) {
+                    Text(
+                        text = stringResource(R.string.text_copy_to_cut)
+                    )
+                }
+            },
+            dismissButton = {
+                FilledTonalButton(
+                    onClick = onDismissRequest
+                ) {
+                    Text(
+                        text = stringResource(R.string.text_cancel)
+                    )
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun ImportDialog(
+    visible: Boolean,
+    activity: ComponentActivity,
+    storageStore: StorageStore,
+    onSuccess: () -> Unit,
+    onDismissRequest: () -> Unit
+) {
+    if (visible) {
+        val coroutineScope = rememberCoroutineScope { Dispatchers.IO }
+        var text by rememberSaveable { mutableStateOf("") }
+        var dialogState by rememberSaveable { mutableStateOf(false) }
+        var propertiesImport by rememberSaveable { mutableStateOf<SmartNoticeProperties?>(null) }
+
+        AlertDialog(
+            onDismissRequest = onDismissRequest,
+            title = {
+                Text(
+                    text = stringResource(R.string.text_import_configs)
+                )
+            },
+            text = {
+                TextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = text,
+                    onValueChange = {
+                        text = it
+                    },
+                    singleLine = true,
+                    label = {
+                        Text(
+                            text = stringResource(R.string.text_input_properties)
+                        )
+                    }
+                )
+            },
+            confirmButton = {
+                var enabled by rememberSaveable { mutableStateOf(true) }
+                Button(
+                    onClick = {
+                        coroutineScope.launch {
+                            enabled = false
+                            try {
+                                propertiesImport = null
+                                val decrypt = Aes.decrypt(
+                                    TweakApplication.application,
+                                    if (text.startsWith("tweak-smart-notice://")) {
+                                        text.substring("tweak-smart-notice://".length).also {
+                                            println(
+                                                it
+                                            )
+                                        }
+                                    } else {
+                                        text
+                                    }
+                                ).toString()
+                                val properties =
+                                    json.decodeFromString<SmartNoticeProperties>(decrypt)
+                                propertiesImport = properties
+                                dialogState = true
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                                withContext(Dispatchers.Main) {
+                                    Toast.makeText(
+                                        activity,
+                                        R.string.text_import_configs_fail,
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            } finally {
+                                enabled = true
+                            }
+                        }
+                    },
+                    enabled = enabled
+                ) {
+                    Text(
+                        text = stringResource(R.string.text_import)
+                    )
+                }
+            },
+            dismissButton = {
+                FilledTonalButton(
+                    onClick = onDismissRequest
+                ) {
+                    Text(
+                        text = stringResource(R.string.text_cancel)
+                    )
+                }
+            }
+        )
+
+        if (dialogState) {
+            AlertDialog(
+                onDismissRequest = {
+                    dialogState = false
+                },
+                title = {
+                    Text(
+                        text = stringResource(R.string.text_alert)
+                    )
+                },
+                text = {
+                    Text(
+                        text = String.format(
+                            stringResource(R.string.text_import_configs_ask),
+                            propertiesImport?.label ?: stringResource(R.string.text_unknown)
+                        )
+                    )
+                },
+                confirmButton = {
+                    var enabled by rememberSaveable { mutableStateOf(true) }
+                    Button(
+                        onClick = {
+                            coroutineScope.launch {
+                                enabled = false
+                                try {
+                                    if (propertiesImport == null) {
+                                        throw NullPointerException(activity.getString(R.string.text_properties_null))
+                                    }
+
+                                    propertiesImport?.apply {
+                                        storageStore.putInt(
+                                            Const.SmartNotice.SMART_NOTICE_CUTOUT_POSITION,
+                                            gravity
+                                        )
+                                        storageStore.putFloat(
+                                            Const.SmartNotice.SMART_NOTICE_OFFSET_X,
+                                            x
+                                        )
+                                        storageStore.putFloat(
+                                            Const.SmartNotice.SMART_NOTICE_OFFSET_Y,
+                                            y
+                                        )
+                                        storageStore.putFloat(
+                                            Const.SmartNotice.SMART_NOTICE_WIDTH,
+                                            width
+                                        )
+                                        storageStore.putFloat(
+                                            Const.SmartNotice.SMART_NOTICE_HEIGHT,
+                                            height
+                                        )
+                                        storageStore.putFloat(
+                                            Const.SmartNotice.SMART_NOTICE_HEIGHT,
+                                            height
+                                        )
+                                        storageStore.putFloat(
+                                            Const.SmartNotice.SMART_NOTICE_CUTOUT_RADIUS,
+                                            radius
+                                        )
+                                        storageStore.putLong(
+                                            Const.SmartNotice.SMART_NOTICE_ANIMATION_DURATION,
+                                            duration
+                                        )
+                                        storageStore.putLong(
+                                            Const.SmartNotice.SMART_NOTICE_ANIMATION_DELAY,
+                                            delay
+                                        )
+                                    }
+
+                                    withContext(Dispatchers.Main) {
+                                        Toast.makeText(
+                                            activity,
+                                            R.string.text_import_configs_success,
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                        activity.reloadProperties()
+                                        onSuccess()
+                                        dialogState = false
+                                        onDismissRequest()
+                                    }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                    withContext(Dispatchers.Main) {
+                                        Toast.makeText(
+                                            activity,
+                                            e.message,
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                } finally {
+                                    enabled = true
+                                }
+                            }
+                        },
+                        enabled = enabled
+                    ) {
+                        Text(
+                            text = stringResource(R.string.text_confirm)
+                        )
+                    }
+                },
+                dismissButton = {
+                    FilledTonalButton(
+                        onClick = {
+                            dialogState = false
+                        }
+                    ) {
+                        Text(
+                            text = stringResource(R.string.text_cancel)
+                        )
+                    }
+                }
+            )
+        }
+    }
+}
+
 
 @Composable
 private fun ValueEditDialog(

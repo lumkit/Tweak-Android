@@ -6,5 +6,6 @@ val json by lazy(mode = LazyThreadSafetyMode.SYNCHRONIZED) {
     Json {
         isLenient = true
         encodeDefaults = true
+        ignoreUnknownKeys = true
     }
 }

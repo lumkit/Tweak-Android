@@ -54,5 +54,10 @@ object Const {
 
         // 息屏常显
         const val SMART_NOTICE_ALWAYS_SHOW = "smart_notice_always_show"
+
+        object Observe {
+            const val SMART_NOTICE_OBSERVE_CHARGE = "smart_notice_observe_charge"
+            const val SMART_NOTICE_OBSERVE_MUSIC = "smart_notice_observe_music"
+        }
     }
 }

@@ -83,35 +83,12 @@ class SmartNoticeWindow(
         private val _islandDefaultSize = MutableStateFlow(Size.Zero)
         val islandDefaultSize = _islandDefaultSize.asStateFlow()
 
-        var animatorDelay = MutableStateFlow(
-            TweakApplication.shared.getLong(
-                Const.SmartNotice.SMART_NOTICE_ANIMATION_DELAY,
-                5000L
-            )
-        )
+        var animatorDelay = MutableStateFlow(5000L)
 
-        var animatorDuration = MutableStateFlow(
-            TweakApplication.shared.getLong(
-                Const.SmartNotice.SMART_NOTICE_ANIMATION_DURATION,
-                550L
-            )
-        )
+        var animatorDuration = MutableStateFlow(550L)
 
         private val _islandCustomSize by lazy {
-            with(density) {
-                MutableStateFlow(
-                    Size(
-                        TweakApplication.shared.getFloat(
-                            Const.SmartNotice.SMART_NOTICE_WIDTH,
-                            SmartNoticeCapsuleDefault.CapsuleWidth.value
-                        ).dp.toPx(),
-                        TweakApplication.shared.getFloat(
-                            Const.SmartNotice.SMART_NOTICE_HEIGHT,
-                            SmartNoticeCapsuleDefault.CapsuleHeight.value
-                        ).dp.toPx()
-                    )
-                )
-            }
+            MutableStateFlow(Size.Zero)
         }
         val islandCustomSize by lazy {
             _islandCustomSize.asStateFlow()
@@ -119,6 +96,10 @@ class SmartNoticeWindow(
 
         fun updateCutout(list: List<CutoutRect>) {
             _cutoutRectListState.value = list
+        }
+
+        fun setCustomSize(size: Size) {
+            _islandCustomSize.value = size
         }
     }
 
@@ -154,6 +135,27 @@ class SmartNoticeWindow(
     @SuppressLint("ObjectAnimatorBinding")
     private fun snapshot() = with(density) {
         viewCoroutine.launch {
+
+            _islandCustomSize.value = Size(
+                TweakApplication.shared.getFloat(
+                    Const.SmartNotice.SMART_NOTICE_WIDTH,
+                    SmartNoticeCapsuleDefault.CapsuleWidth.value
+                ).dp.toPx(),
+                TweakApplication.shared.getFloat(
+                    Const.SmartNotice.SMART_NOTICE_HEIGHT,
+                    SmartNoticeCapsuleDefault.CapsuleHeight.value
+                ).dp.toPx()
+            )
+
+            animatorDelay.value = TweakApplication.shared.getLong(
+                Const.SmartNotice.SMART_NOTICE_ANIMATION_DELAY,
+                5000L
+            )
+
+            animatorDuration.value = TweakApplication.shared.getLong(
+                Const.SmartNotice.SMART_NOTICE_ANIMATION_DURATION,
+                550L
+            )
 
             launch {
                 _cutoutRectListState.collect {
@@ -269,6 +271,10 @@ class SmartNoticeWindow(
                         localRadius.dp.toPx()
                     }
 
+                    val localOffsetX = TweakApplication.shared.getFloat(
+                        Const.SmartNotice.SMART_NOTICE_OFFSET_X,
+                        0f
+                    )
                     val localOffsetY = TweakApplication.shared.getFloat(
                         Const.SmartNotice.SMART_NOTICE_OFFSET_Y,
                         -1f
@@ -279,6 +285,8 @@ class SmartNoticeWindow(
                     } else {
                         localOffsetY.dp.roundToPx()
                     }
+
+                    windowLayoutParams.x = localOffsetX.dp.roundToPx()
 
                     val width = ObjectAnimator.ofFloat(
                         this@SmartNoticeWindow,

@@ -59,5 +59,20 @@
     <string name="text_export_configs">导出配置</string>
     <string name="text_smart_notice_animation_duration">动画时长</string>
     <string name="text_smart_notice_delay_duration">消息显示时长</string>
+    <string name="text_import_configs">导入配置</string>
+    <string name="text_configs_exported">配置内容已导出到剪切板</string>
+    <string name="text_copy_to_cut">复制到剪切板</string>
+    <string name="text_input_label">输入标题</string>
+    <string name="text_import_configs_fail">配置解析失败！</string>
+    <string name="text_import_configs_ask">是否导入标题为【%s】的配置？</string>
+    <string name="text_import_configs_success">导入成功</string>
+    <string name="text_properties_null">导入失败！配置信息是空的！</string>
+    <string name="text_import">导入</string>
+    <string name="text_input_properties">输入配置文本</string>
+    <string name="text_notice_observer">消息订阅</string>
+    <string name="text_smart_notice_observe_charge">充电提示</string>
+    <string name="text_smart_notice_observe_charge_tips">连接或断开充电器时显示灵动通知</string>
+    <string name="text_smart_notice_observe_music">灵动音乐</string>
+    <string name="text_smart_notice_observe_music_tips">播放音乐时显示在灵动通知中</string>
 
 </resources>
