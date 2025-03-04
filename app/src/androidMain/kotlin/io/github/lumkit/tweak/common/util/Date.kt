@@ -8,9 +8,16 @@ import java.util.concurrent.TimeUnit
  * @return 格式化后的字符串，例如 "2小时15分钟30秒"
  */
 @SuppressLint("DefaultLocale")
-fun Long.formatUptime(): String {
+fun Long.formatUptimeHour(): String {
     val hours = TimeUnit.MILLISECONDS.toHours(this)
     val minutes = TimeUnit.MILLISECONDS.toMinutes(this) % 60
     val seconds = TimeUnit.MILLISECONDS.toSeconds(this) % 60
     return String.format("%02d:%02d:%02d", hours, minutes, seconds)
+}
+
+@SuppressLint("DefaultLocale")
+fun Long.formatUptimeMinute(): String {
+    val minutes = this / 1000 / 60
+    val seconds = this / 1000 % 60
+    return String.format("%02d:%02d", minutes, seconds)
 }

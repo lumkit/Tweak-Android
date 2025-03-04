@@ -19,7 +19,7 @@ import io.github.lumkit.tweak.common.shell.ProcessUtils
 import io.github.lumkit.tweak.common.shell.provide.ReusableShells
 import io.github.lumkit.tweak.common.util.CpuCodenameUtils
 import io.github.lumkit.tweak.common.util.firstLine
-import io.github.lumkit.tweak.common.util.formatUptime
+import io.github.lumkit.tweak.common.util.formatUptimeHour
 import io.github.lumkit.tweak.data.AndroidSoc
 import io.github.lumkit.tweak.data.ChartState
 import io.github.lumkit.tweak.model.Config
@@ -198,7 +198,7 @@ class OverviewViewModel(
             temperature = batteryStatus.temperature,
             androidVersion = Build.VERSION.RELEASE,
             androidSDK = Build.VERSION.SDK_INT,
-            runningDuration = SystemClock.elapsedRealtime().formatUptime(),
+            runningDuration = SystemClock.elapsedRealtime().formatUptimeHour(),
         )
     }
 

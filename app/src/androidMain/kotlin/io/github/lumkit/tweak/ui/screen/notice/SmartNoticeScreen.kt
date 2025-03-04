@@ -39,6 +39,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -90,9 +91,6 @@ import io.github.lumkit.tweak.common.util.getStatusBarHeight
 import io.github.lumkit.tweak.data.SmartNoticeProperties
 import io.github.lumkit.tweak.model.Const
 import io.github.lumkit.tweak.services.SmartNoticeService
-import io.github.lumkit.tweak.services.SmartNoticeService.Companion.ACTION_POWER_CONNECTED
-import io.github.lumkit.tweak.services.SmartNoticeService.Companion.ACTION_POWER_DISCONNECTED
-import io.github.lumkit.tweak.services.SmartNoticeService.Companion.chargeChange
 import io.github.lumkit.tweak.services.SmartNoticeService.Companion.disableGameMode
 import io.github.lumkit.tweak.services.SmartNoticeService.Companion.enableGameMode
 import io.github.lumkit.tweak.services.SmartNoticeService.Companion.reloadProperties
@@ -103,6 +101,7 @@ import io.github.lumkit.tweak.services.SmartNoticeService.Companion.updateCutout
 import io.github.lumkit.tweak.services.SmartNoticeService.Companion.updateCutoutHeight
 import io.github.lumkit.tweak.services.SmartNoticeService.Companion.updateCutoutRadius
 import io.github.lumkit.tweak.services.SmartNoticeService.Companion.updateCutoutWidth
+import io.github.lumkit.tweak.services.SmartNoticeService.Companion.updateMediaObserve
 import io.github.lumkit.tweak.services.SmartNoticeService.Companion.updateStart
 import io.github.lumkit.tweak.services.SmartNoticeService.Companion.updateTop
 import io.github.lumkit.tweak.ui.component.DetailItem
@@ -128,7 +127,6 @@ import kotlinx.serialization.encodeToString
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
-import kotlin.random.Random
 
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -609,6 +607,41 @@ fun ContentList(
             )
         }
 
+        // 游戏模式
+        run {
+            var switch by rememberSaveable {
+                mutableStateOf(
+                    storageStore.getBoolean(
+                        Const.SmartNotice.SMART_NOTICE_ALWAYS_SHOW,
+                        false
+                    )
+                )
+            }
+
+            DetailItem(
+                title = {
+                    Text(
+                        text = stringResource(R.string.text_smart_notice_always_show)
+                    )
+                },
+                subTitle = {
+                    Text(
+                        text = stringResource(R.string.text_smart_notice_always_show_tips)
+                    )
+                },
+                onClick = {
+                    switch = !switch
+                    storageStore.putBoolean(Const.SmartNotice.SMART_NOTICE_ALWAYS_SHOW, switch)
+                },
+                actions = {
+                    Switch(
+                        checked = switch,
+                        onCheckedChange = null,
+                    )
+                }
+            )
+        }
+
         // 位置调整
         run {
             var dialogState by rememberSaveable { mutableStateOf(false) }
@@ -698,7 +731,7 @@ fun ContentList(
                 mutableStateOf(
                     storageStore.getBoolean(
                         Const.SmartNotice.Observe.SMART_NOTICE_OBSERVE_MUSIC,
-                        false
+                        true
                     )
                 )
             }
@@ -706,7 +739,6 @@ fun ContentList(
             var attrDialog by rememberSaveable { mutableStateOf(false) }
 
             DetailItem(
-                enabled = false,
                 onClick = {
                     attrDialog = true
                 },
@@ -722,7 +754,6 @@ fun ContentList(
                 },
                 actions = {
                     Switch(
-                        enabled = false,
                         checked = observed,
                         onCheckedChange = {
                             observed = it
@@ -730,6 +761,7 @@ fun ContentList(
                                 Const.SmartNotice.Observe.SMART_NOTICE_OBSERVE_MUSIC,
                                 it
                             )
+                            activity.updateMediaObserve(it)
                         }
                     )
                 }
@@ -791,6 +823,7 @@ private fun SetNoticeFieldBox(
 
     val deviceSize = remember { activity.getDiveSize() }
     val density = LocalDensity.current
+    val coroutineScope = rememberCoroutineScope()
 
     with(density) {
         Column(
@@ -1571,43 +1604,148 @@ private fun SetNoticeFieldBox(
                 )
             }
 
-            // 导入配置
-            run {
-                var dialogState by rememberSaveable { mutableStateOf(false) }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // 导入配置
+                run {
+                    var dialogState by rememberSaveable { mutableStateOf(false) }
 
-                TextButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = {
-                        dialogState = true
-                    },
-                ) {
-                    Text(
-                        text = stringResource(R.string.text_export_configs)
-                    )
+                    TextButton(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        onClick = {
+                            dialogState = true
+                        },
+                    ) {
+                        Text(
+                            text = stringResource(R.string.text_export_configs)
+                        )
+                    }
+
+                    ExportDialog(dialogState, activity, storageStore) { dialogState = false }
                 }
 
-                ExportDialog(dialogState, activity, storageStore) { dialogState = false }
+                run {
+                    var dialogState by rememberSaveable { mutableStateOf(false) }
+                    TextButton(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        onClick = {
+                            dialogState = true
+                        }
+                    ) {
+                        Text(
+                            text = stringResource(R.string.text_import_configs)
+                        )
+                    }
+
+                    ImportDialog(
+                        dialogState,
+                        activity,
+                        storageStore,
+                        onDismissRequest,
+                    ) { dialogState = false }
+                }
             }
 
             run {
-                var dialogState by rememberSaveable { mutableStateOf(false) }
-                TextButton(
+                var resetDialogState by rememberSaveable { mutableStateOf(false) }
+                Button(
                     modifier = Modifier.fillMaxWidth(),
                     onClick = {
-                        dialogState = true
-                    }
+                        resetDialogState = true
+                    },
+                    colors = ButtonDefaults.buttonColors()
+                        .copy(
+                            containerColor = MaterialTheme.colorScheme.error
+                        )
                 ) {
                     Text(
-                        text = stringResource(R.string.text_import_configs)
+                        text = stringResource(R.string.text_smart_notice_reset_properties)
                     )
                 }
 
-                ImportDialog(
-                    dialogState,
-                    activity,
-                    storageStore,
-                    onDismissRequest,
-                ) { dialogState = false }
+                if (resetDialogState) {
+                    AlertDialog(
+                        onDismissRequest = { resetDialogState = false },
+                        title = {
+                            Text(
+                                text = stringResource(R.string.text_alert)
+                            )
+                        },
+                        text = {
+                            Text(
+                                text = stringResource(R.string.text_smart_notice_reset_properties_msg)
+                            )
+                        },
+                        confirmButton = {
+                            var enabled by rememberSaveable { mutableStateOf(true) }
+                            Button(
+                                onClick = {
+                                    enabled = false
+                                    coroutineScope.launch {
+                                        storageStore.putInt(
+                                            Const.SmartNotice.SMART_NOTICE_CUTOUT_POSITION,
+                                            SmartNoticeWindow.Companion.Gravity.Center.ordinal
+                                        )
+                                        storageStore.putFloat(
+                                            Const.SmartNotice.SMART_NOTICE_OFFSET_X,
+                                            0f
+                                        )
+                                        storageStore.putFloat(
+                                            Const.SmartNotice.SMART_NOTICE_OFFSET_Y,
+                                            (getStatusBarHeight() - SmartNoticeCapsuleDefault.CapsuleHeight.roundToPx() - SmartNoticeCapsuleDefault.CapsulePaddingTop.roundToPx() / 2).toDp().value
+                                        )
+                                        storageStore.putFloat(
+                                            Const.SmartNotice.SMART_NOTICE_WIDTH,
+                                            SmartNoticeCapsuleDefault.CapsuleWidth.value
+                                        )
+                                        storageStore.putFloat(
+                                            Const.SmartNotice.SMART_NOTICE_HEIGHT,
+                                            SmartNoticeCapsuleDefault.CapsuleHeight.value
+                                        )
+                                        storageStore.putFloat(
+                                            Const.SmartNotice.SMART_NOTICE_CUTOUT_RADIUS,
+                                            SmartNoticeCapsuleDefault.CapsuleHeight.value / 2f
+                                        )
+                                        storageStore.putLong(
+                                            Const.SmartNotice.SMART_NOTICE_ANIMATION_DURATION,
+                                            550L
+                                        )
+                                        storageStore.putLong(
+                                            Const.SmartNotice.SMART_NOTICE_ANIMATION_DELAY,
+                                            5000L
+                                        )
+                                        activity.reloadProperties()
+                                        enabled = true
+                                        resetDialogState = false
+                                        onDismissRequest()
+                                    }
+                                },
+                                enabled = enabled
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.text_confirm)
+                                )
+                            }
+                        },
+                        dismissButton = {
+                            FilledTonalButton(
+                                onClick = {
+                                    resetDialogState = false
+                                }
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.text_cancel)
+                                )
+                            }
+                        }
+                    )
+                }
             }
         }
     }
@@ -1871,10 +2009,6 @@ private fun ImportDialog(
                                         storageStore.putFloat(
                                             Const.SmartNotice.SMART_NOTICE_WIDTH,
                                             width
-                                        )
-                                        storageStore.putFloat(
-                                            Const.SmartNotice.SMART_NOTICE_HEIGHT,
-                                            height
                                         )
                                         storageStore.putFloat(
                                             Const.SmartNotice.SMART_NOTICE_HEIGHT,

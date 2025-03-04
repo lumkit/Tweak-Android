@@ -13,6 +13,7 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.PixelFormat
+import android.media.session.MediaSessionManager.OnActiveSessionsChangedListener
 import android.os.BatteryManager
 import android.os.Build
 import android.os.IBinder
@@ -54,13 +55,16 @@ import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.common.util.ServiceUtils
 import io.github.lumkit.tweak.common.util.getDiveSize
 import io.github.lumkit.tweak.model.Const
+import io.github.lumkit.tweak.services.media.MediaCallback
 import io.github.lumkit.tweak.ui.lifecycle.ComposeViewLifecycleOwner
 import io.github.lumkit.tweak.ui.screen.ScreenRoute
 import io.github.lumkit.tweak.ui.screen.notice.SmartNoticeViewModel
 import io.github.lumkit.tweak.ui.token.SmartNoticeCapsuleDefault
 import io.github.lumkit.tweak.ui.view.SmartNoticeWindow
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
+import kotlin.math.min
 
 val LocalSmartNoticeView = staticCompositionLocalOf<ComposeView> { error("not provided.") }
 val LocalSmartNoticeWindowManager =
@@ -91,7 +95,7 @@ class SmartNoticeService : Service() {
         const val ACTION_CUTOUT_WIDTH = "ACTION_CUTOUT_WIDTH"
         const val ACTION_CUTOUT_HEIGHT = "ACTION_CUTOUT_HEIGHT"
         const val ACTION_CUTOUT_RADIUS = "ACTION_CUTOUT_RADIUS"
-
+        const val ACTION_MEDIA_OBSERVE = "ACTION_MEDIA_OBSERVE"
 
         fun canStartSmartNotice(): Boolean {
             val switch =
@@ -217,6 +221,15 @@ class SmartNoticeService : Service() {
                 startService(intent)
             }
         }
+
+        fun Context.updateMediaObserve(observe: Boolean) {
+            if (canStartSmartNotice() && isRunning() && runBlocking { SmartNoticeViewModel.checkAccessibilityService() }) {
+                val intent = Intent(this, SmartNoticeService::class.java)
+                intent.action = ACTION_MEDIA_OBSERVE
+                intent.putExtra("observe", observe)
+                startService(intent)
+            }
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -231,7 +244,8 @@ class SmartNoticeService : Service() {
     private var smartNoticeView: SmartNoticeWindow? = null
     private var smartNoticeLifecycleOwner: ComposeViewLifecycleOwner? = null
     private val params = LayoutParams()
-
+    val callbackMap = MutableStateFlow<Map<String, MediaCallback>>(mapOf())
+    var topMediaCallback = MutableStateFlow<MediaCallback?>(null)
 
     private fun initService() {
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -254,27 +268,52 @@ class SmartNoticeService : Service() {
         run {
             val filter = IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED)
             registerReceiver(orientationChangeReceiver, filter)
-
-            if (TweakApplication.shared.getBoolean(
-                    Const.SmartNotice.SMART_NOTICE_GAME_MODE,
-                    true
-                )
-            ) {
-                gameModeChange()
-            } else {
-                smartNoticeView?.show()
-            }
         }
 
+        // 电量
         run {
             val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
             registerReceiver(batteryReceiver, filter)
         }
 
+        // 充电
         run {
             val filter = IntentFilter(Intent.ACTION_POWER_CONNECTED)
             filter.addAction(Intent.ACTION_POWER_DISCONNECTED)
             registerReceiver(chargingReceiver, filter)
+        }
+
+        // 息屏
+        run {
+            val filter = IntentFilter().apply {
+                addAction(Intent.ACTION_SCREEN_OFF)
+                addAction(Intent.ACTION_SCREEN_ON)
+                addAction(Intent.ACTION_USER_PRESENT)
+            }
+            registerReceiver(screenStateReceiver, filter)
+        }
+
+        // 音乐
+        run {
+            TweakAccessibilityService.mediaSessionManager?.apply {
+                addOnActiveSessionsChangedListener(
+                    listenerForActiveSessions,
+                    TweakAccessibilityService.componentName
+                )
+
+                getActiveSessions(TweakAccessibilityService.componentName).forEach { controller ->
+                    if (callbackMap.value[controller.packageName] != null)
+                        return@forEach
+
+                    val callback = MediaCallback(controller, this@SmartNoticeService)
+                    val map = mutableMapOf<String, MediaCallback>()
+                    map.putAll(callbackMap.value)
+                    map[controller.packageName] = callback
+                    controller.registerCallback(callback)
+
+                    callbackMap.value = map
+                }
+            }
         }
     }
 
@@ -368,8 +407,7 @@ class SmartNoticeService : Service() {
         params.flags = LayoutParams.FLAG_NOT_TOUCH_MODAL or
                 LayoutParams.FLAG_NOT_FOCUSABLE or
                 LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                LayoutParams.FLAG_LAYOUT_NO_LIMITS or
-                LayoutParams.FLAG_SHOW_WHEN_LOCKED
+                LayoutParams.FLAG_LAYOUT_NO_LIMITS
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             params.layoutInDisplayCutoutMode =
@@ -398,7 +436,7 @@ class SmartNoticeService : Service() {
 
         smartNoticeView = windowManager?.let {
             SmartNoticeWindow(
-                context = this,
+                service = this,
                 windowManager = it,
                 windowLayoutParams = params
             )
@@ -409,10 +447,12 @@ class SmartNoticeService : Service() {
             attachToDecorView(smartNoticeView)
         }
 
-        windowManager?.addView(
-            smartNoticeView,
-            params,
-        )
+        try {
+            windowManager?.addView(
+                smartNoticeView,
+                params,
+            )
+        }catch (_: Exception) {}
 
         smartNoticeLifecycleOwner?.onStart()
         smartNoticeLifecycleOwner?.onResume()
@@ -468,6 +508,46 @@ class SmartNoticeService : Service() {
                     context.chargeChange(ACTION_POWER_DISCONNECTED)
                 }
             }
+        }
+    }
+
+    private val screenStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                Intent.ACTION_SCREEN_OFF -> {
+                    if (!TweakApplication.shared.getBoolean(Const.SmartNotice.SMART_NOTICE_ALWAYS_SHOW, false)) {
+                        smartNoticeView?.hide()
+                    } else {
+                        runBlocking {
+                            stopSmartNotice(true)
+                            startSmartNotice()
+                        }
+                    }
+                }
+                else -> {
+                    if (smartNoticeView?.isShow == false) {
+                        runBlocking {
+                            stopSmartNotice(true)
+                            startSmartNotice()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private val listenerForActiveSessions = OnActiveSessionsChangedListener { controllers ->
+        controllers?.forEach { controller ->
+            if (callbackMap.value[controller.packageName] != null)
+                return@OnActiveSessionsChangedListener
+
+            val callback = MediaCallback(controller, this@SmartNoticeService)
+            val map = mutableMapOf<String, MediaCallback>()
+            map.putAll(callbackMap.value)
+            map[controller.packageName] = callback
+            controller.registerCallback(callback)
+
+            callbackMap.value = map
         }
     }
 
@@ -541,7 +621,7 @@ class SmartNoticeService : Service() {
                         val diveSize = getDiveSize()
                         DpSize(
                             width = with(density) {
-                                diveSize.width.toDp() - 28.dp * 2f
+                                min(diveSize.width, diveSize.height).toDp() - 28.dp * 2f
                             },
                             height = 32.dp
                         )
@@ -557,7 +637,7 @@ class SmartNoticeService : Service() {
                         val diveSize = getDiveSize()
                         DpSize(
                             width = with(density) {
-                                diveSize.width.toDp() - 28.dp * 2f
+                                min(diveSize.width, diveSize.height).toDp() - 28.dp * 2f
                             },
                             height = 32.dp
                         )
@@ -568,32 +648,36 @@ class SmartNoticeService : Service() {
             }
 
             ACTION_MARGIN_TOP -> {
-                val offsetY = intent.getFloatExtra("y", 0f)
-                try {
-                    params.y = with(TweakApplication.density) {
-                        offsetY.dp.roundToPx()
+                if (smartNoticeView?.mediaComponentExpanded?.value == false) {
+                    val offsetY = intent.getFloatExtra("y", 0f)
+                    try {
+                        params.y = with(TweakApplication.density) {
+                            offsetY.dp.roundToPx()
+                        }
+                        windowManager?.updateViewLayout(
+                            smartNoticeView,
+                            params,
+                        )
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
-                    windowManager?.updateViewLayout(
-                        smartNoticeView,
-                        params,
-                    )
-                } catch (e: Exception) {
-                    e.printStackTrace()
                 }
             }
 
             ACTION_MARGIN_START -> {
-                val offsetX = intent.getFloatExtra("x", 0f)
-                try {
-                    params.x = with(TweakApplication.density) {
-                        offsetX.dp.roundToPx()
+                if (smartNoticeView?.mediaComponentExpanded?.value == false) {
+                    val offsetX = intent.getFloatExtra("x", 0f)
+                    try {
+                        params.x = with(TweakApplication.density) {
+                            offsetX.dp.roundToPx()
+                        }
+                        windowManager?.updateViewLayout(
+                            smartNoticeView,
+                            params,
+                        )
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
-                    windowManager?.updateViewLayout(
-                        smartNoticeView,
-                        params,
-                    )
-                } catch (e: Exception) {
-                    e.printStackTrace()
                 }
             }
 
@@ -611,54 +695,69 @@ class SmartNoticeService : Service() {
             }
 
             ACTION_CUTOUT_WIDTH -> {
-                val width =
-                    intent.getFloatExtra("width", SmartNoticeCapsuleDefault.CapsuleWidth.value)
-                try {
-                    params.width = with(TweakApplication.density) {
-                        width.dp.roundToPx()
-                    }
-                    SmartNoticeWindow.setCustomSize(
-                        SmartNoticeWindow.islandCustomSize.value.copy(
-                            width = params.width.toFloat()
+                if (topMediaCallback.value == null) {
+                    val width =
+                        intent.getFloatExtra("width", SmartNoticeCapsuleDefault.CapsuleWidth.value)
+                    try {
+                        params.width = with(TweakApplication.density) {
+                            width.dp.roundToPx()
+                        }
+                        SmartNoticeWindow.setCustomSize(
+                            SmartNoticeWindow.islandCustomSize.value.copy(
+                                width = params.width.toFloat()
+                            )
                         )
-                    )
-                    windowManager?.updateViewLayout(
-                        smartNoticeView,
-                        params,
-                    )
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                        windowManager?.updateViewLayout(
+                            smartNoticeView,
+                            params,
+                        )
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
                 }
             }
 
             ACTION_CUTOUT_HEIGHT -> {
-                val height =
-                    intent.getFloatExtra("height", SmartNoticeCapsuleDefault.CapsuleHeight.value)
-                try {
-                    params.height = with(TweakApplication.density) {
-                        height.dp.roundToPx()
-                    }
-                    SmartNoticeWindow.setCustomSize(
-                        SmartNoticeWindow.islandCustomSize.value.copy(
-                            height = params.height.toFloat()
+                if (topMediaCallback.value == null) {
+                    val height =
+                        intent.getFloatExtra("height", SmartNoticeCapsuleDefault.CapsuleHeight.value)
+                    try {
+                        params.height = with(TweakApplication.density) {
+                            height.dp.roundToPx()
+                        }
+                        SmartNoticeWindow.setCustomSize(
+                            SmartNoticeWindow.islandCustomSize.value.copy(
+                                height = params.height.toFloat()
+                            )
                         )
-                    )
-                    windowManager?.updateViewLayout(
-                        smartNoticeView,
-                        params,
-                    )
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                        windowManager?.updateViewLayout(
+                            smartNoticeView,
+                            params,
+                        )
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
                 }
             }
 
             ACTION_CUTOUT_RADIUS -> {
                 with(TweakApplication.density) {
-                    val radius = intent.getFloatExtra(
-                        "radius",
-                        SmartNoticeCapsuleDefault.CapsuleHeight.value / 2f
-                    )
-                    smartNoticeView?.radius = radius.dp.toPx()
+                    if (topMediaCallback.value == null) {
+                        val radius = intent.getFloatExtra(
+                            "radius",
+                            SmartNoticeCapsuleDefault.CapsuleHeight.value / 2f
+                        )
+                        smartNoticeView?.radius = radius.dp.toPx()
+                    }
+                }
+            }
+
+            ACTION_MEDIA_OBSERVE -> {
+                val observe = intent.getBooleanExtra("observe", false)
+                if (observe) {
+                    smartNoticeView?.showMedia()
+                } else {
+                    smartNoticeView?.hideMedia()
                 }
             }
         }
@@ -678,9 +777,16 @@ class SmartNoticeService : Service() {
         smartNoticeLifecycleOwner = null
         smartNoticeView?.release()
         smartNoticeView = null
+        callbackMap.value.forEach { (_, callback) ->
+            callback.mediaController.unregisterCallback(callback)
+        }
+        TweakAccessibilityService.mediaSessionManager?.removeOnActiveSessionsChangedListener(
+            listenerForActiveSessions
+        )
         unregisterReceiver(orientationChangeReceiver)
         unregisterReceiver(batteryReceiver)
         unregisterReceiver(chargingReceiver)
+        unregisterReceiver(screenStateReceiver)
         super.onDestroy()
     }
 

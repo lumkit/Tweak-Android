@@ -74,5 +74,9 @@
     <string name="text_smart_notice_observe_charge_tips">连接或断开充电器时显示灵动通知</string>
     <string name="text_smart_notice_observe_music">灵动音乐</string>
     <string name="text_smart_notice_observe_music_tips">播放音乐时显示在灵动通知中</string>
+    <string name="text_smart_notice_reset_properties">重置参数</string>
+    <string name="text_smart_notice_reset_properties_msg">是否重置灵动通知配置？点击【确认按钮】继续</string>
+    <string name="text_smart_notice_always_show">息屏常显</string>
+    <string name="text_smart_notice_always_show_tips">OLED屏幕下支持息屏显示</string>
 
 </resources>

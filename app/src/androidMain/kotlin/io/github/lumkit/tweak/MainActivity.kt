@@ -16,6 +16,7 @@ import io.github.lumkit.tweak.ui.view.SmartNoticeWindow
 import kotlinx.serialization.encodeToString
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -30,7 +31,7 @@ class MainActivity : ComponentActivity() {
         }
 
         // 挖孔获取
-        window.decorView.setOnApplyWindowInsetsListener { v, insets ->
+        window.decorView.setOnApplyWindowInsetsListener { _, insets ->
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 val displayCutout = insets.displayCutout
                 displayCutout?.apply {
