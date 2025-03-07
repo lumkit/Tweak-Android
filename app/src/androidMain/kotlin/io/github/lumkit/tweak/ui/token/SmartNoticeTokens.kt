@@ -28,4 +28,8 @@ object SmartNoticeCapsuleDefault {
         val ExpandedHeight = 182.dp
         val ExpandedRadius = 24.dp
     }
+
+    object Notification {
+        val Height = 88.dp
+    }
 }

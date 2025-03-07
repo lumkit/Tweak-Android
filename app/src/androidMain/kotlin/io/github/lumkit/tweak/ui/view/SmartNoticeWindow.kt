@@ -10,7 +10,13 @@ import android.graphics.Rect
 import android.media.session.PlaybackState
 import android.os.Handler
 import android.os.Looper
+import android.service.notification.StatusBarNotification
+import android.view.View
 import android.view.WindowManager
+import android.view.WindowManager.LayoutParams
+import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.Interpolator
+import android.view.animation.LinearInterpolator
 import android.view.animation.OvershootInterpolator
 import android.widget.RelativeLayout
 import androidx.cardview.widget.CardView
@@ -51,7 +57,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -76,12 +81,14 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import androidx.core.graphics.drawable.toBitmap
+import androidx.core.os.postDelayed
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import io.github.lumkit.tweak.Main
 import io.github.lumkit.tweak.R
 import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.TweakApplication.Companion.density
+import io.github.lumkit.tweak.common.shell.provide.ReusableShells
 import io.github.lumkit.tweak.common.util.AppInfoLoader
 import io.github.lumkit.tweak.common.util.formatUptimeMinute
 import io.github.lumkit.tweak.common.util.getStatusBarHeight
@@ -93,11 +100,11 @@ import io.github.lumkit.tweak.services.media.MediaStruct
 import io.github.lumkit.tweak.ui.local.json
 import io.github.lumkit.tweak.ui.theme.AppTheme
 import io.github.lumkit.tweak.ui.token.SmartNoticeCapsuleDefault
+import io.github.lumkit.tweak.ui.view.model.NotificationImpl
+import io.github.lumkit.tweak.ui.view.model.QQNotificationImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -129,6 +136,21 @@ class SmartNoticeWindow(
                 Start -> TweakApplication.application.getString(R.string.text_cutout_gravity_start)
                 Center -> TweakApplication.application.getString(R.string.text_cutout_gravity_center)
                 End -> TweakApplication.application.getString(R.string.text_cutout_gravity_end)
+            }
+        }
+
+        enum class SmartNoticeInterpolator {
+            Linear, AccelerateDecelerate, Overshoot;
+            fun asString(): String = when (this) {
+                Linear -> TweakApplication.application.getString(
+                    R.string.text_smart_notice_animation_interpolator_linear
+                )
+                AccelerateDecelerate -> TweakApplication.application.getString(
+                    R.string.text_smart_notice_animation_interpolator_accelerate_decelerate
+                )
+                Overshoot -> TweakApplication.application.getString(
+                    R.string.text_smart_notice_animation_interpolator_overshoot
+                )
             }
         }
 
@@ -172,6 +194,18 @@ class SmartNoticeWindow(
     val mediaComponentExpanded = MutableStateFlow(false)
     private val container: RelativeLayout
     private val animationContainer: ComposeView
+    private val localInterpolator: Interpolator
+        get() {
+            val index = TweakApplication.shared.getInt(
+                Const.SmartNotice.SMART_NOTICE_ANIMATION_INTERPOLATOR,
+                SmartNoticeInterpolator.Overshoot.ordinal
+            )
+            return when (SmartNoticeInterpolator.entries[index]) {
+                SmartNoticeInterpolator.Linear -> LinearInterpolator()
+                SmartNoticeInterpolator.AccelerateDecelerate -> AccelerateDecelerateInterpolator()
+                SmartNoticeInterpolator.Overshoot -> OvershootInterpolator()
+            }
+        }
 
     init {
         alpha = 0f
@@ -256,19 +290,6 @@ class SmartNoticeWindow(
             launch {
                 _islandCustomSize.filter { it.width != 0f && it.height != 0f }.collect {
                     withContext(Dispatchers.Main) {
-                        if (TweakApplication.shared.getFloat(
-                                Const.SmartNotice.SMART_NOTICE_CUTOUT_RADIUS,
-                                -1f
-                            ) == -1f
-                        ) {
-                            radius = min(it.width, it.height) / 2f
-                            TweakApplication.shared.edit {
-                                putFloat(
-                                    Const.SmartNotice.SMART_NOTICE_CUTOUT_RADIUS,
-                                    radius.toDp().value
-                                )
-                            }
-                        }
                         TweakApplication.shared.edit {
                             putFloat(Const.SmartNotice.SMART_NOTICE_WIDTH, it.width.toDp().value)
                             putFloat(Const.SmartNotice.SMART_NOTICE_HEIGHT, it.height.toDp().value)
@@ -336,6 +357,7 @@ class SmartNoticeWindow(
     fun show() {
         isShow = true
         mediaComponentExpanded.value = false
+        notificationComponentExpandedState.value = false
 
         if (widthAnimator != null && widthAnimator?.isRunning == true) {
             widthAnimator?.cancel()
@@ -361,13 +383,9 @@ class SmartNoticeWindow(
 
             val localRadius = TweakApplication.shared.getFloat(
                 Const.SmartNotice.SMART_NOTICE_CUTOUT_RADIUS,
-                -1f
+                SmartNoticeCapsuleDefault.Media.Radius.value
             )
-            radius = if (localRadius == -1f) {
-                size.height / 2f
-            } else {
-                localRadius.dp.toPx()
-            }
+            radius = localRadius.dp.toPx()
 
             val localOffsetX = TweakApplication.shared.getFloat(
                 Const.SmartNotice.SMART_NOTICE_OFFSET_X,
@@ -449,6 +467,7 @@ class SmartNoticeWindow(
     fun hide() {
         isShow = false
         mediaComponentExpanded.value = false
+        notificationComponentExpandedState.value = false
 
         if (widthAnimator != null && widthAnimator?.isRunning == true) {
             widthAnimator?.cancel()
@@ -509,121 +528,143 @@ class SmartNoticeWindow(
 
     fun toast(
         componentSize: SmartNoticeWindowScope.() -> DpSize,
-        content: @Composable Density.(SmartNoticeWindow) -> Unit,
+        autoMinimize: Boolean = true,
+        offsetY: Float? = null,
+        content: @Composable Density.(SmartNoticeWindow, SmartNoticeWindowScope) -> Unit,
     ) {
-        if (widthAnimator != null && widthAnimator?.isRunning == true) {
-            widthAnimator?.cancel()
-        }
-        if (heightAnimator != null && heightAnimator?.isRunning == true) {
-            heightAnimator?.cancel()
-        }
-
-        if (alphaAnimatorComposeView != null && alphaAnimatorComposeView?.isRunning == true) {
-            alphaAnimatorComposeView?.cancel()
-        }
-
         // 如果媒体组件是展开状态，则不执行提示动画
         if (mediaComponentExpanded.value) {
             return
         }
 
-        with(density) {
-            val size = _islandCustomSize.value
-
-            val rect = if (_cutoutRectListState.value.isEmpty()) {
-                null
-            } else {
-                val first = _cutoutRectListState.value.first()
-                val last = _cutoutRectListState.value.last()
-                Rect(
-                    first.left,
-                    first.top,
-                    last.right,
-                    last.bottom
-                )
-            }
-
-            val targetSize = componentSize(
-                object : SmartNoticeWindowScope() {
-                    override val cutoutRect: Rect?
-                        get() = rect
-                    override val startSize: Size
-                        get() = size
-                    override val density: Density
-                        get() = this@with
+        handler.removeCallbacksAndMessages(null)
+        handler.postDelayed(
+            {
+                if (widthAnimator != null && widthAnimator?.isRunning == true) {
+                    widthAnimator?.cancel()
                 }
-            ).toSize()
+                if (heightAnimator != null && heightAnimator?.isRunning == true) {
+                    heightAnimator?.cancel()
+                }
 
-            widthAnimator = ValueAnimator.ofFloat(
-                windowLayoutParams.width.toFloat(),
-                targetSize.width,
-            ).apply {
-                this.duration = animatorDuration.value
-                this.interpolator = OvershootInterpolator()
-                addUpdateListener {
-                    val roundToInt = (it.animatedValue as Float).roundToInt()
-                    windowLayoutParams.width = roundToInt
-                    try {
-                        windowManager.updateViewLayout(
-                            this@SmartNoticeWindow,
-                            windowLayoutParams
+                if (alphaAnimatorComposeView != null && alphaAnimatorComposeView?.isRunning == true) {
+                    alphaAnimatorComposeView?.cancel()
+                }
+
+                if (offsetYAnimator != null && offsetYAnimator?.isRunning == true) {
+                    offsetYAnimator?.cancel()
+                }
+
+                if (radiusAnimator != null && radiusAnimator?.isRunning == true) {
+                    radiusAnimator?.cancel()
+                }
+
+                with(density) {
+                    val size = _islandCustomSize.value
+
+                    val rect = if (_cutoutRectListState.value.isEmpty()) {
+                        null
+                    } else {
+                        val first = _cutoutRectListState.value.first()
+                        val last = _cutoutRectListState.value.last()
+                        Rect(
+                            first.left,
+                            first.top,
+                            last.right,
+                            last.bottom
                         )
-                    } catch (_: Exception) {
                     }
-                }
-            }
 
-            heightAnimator = ValueAnimator.ofFloat(
-                windowLayoutParams.height.toFloat(),
-                targetSize.height,
-            ).apply {
-                this.duration = animatorDuration.value
-                this.interpolator = OvershootInterpolator()
-                addUpdateListener {
-                    val roundToInt = (it.animatedValue as Float).roundToInt()
-                    windowLayoutParams.height = roundToInt
-                    try {
-                        windowManager.updateViewLayout(
-                            this@SmartNoticeWindow,
-                            windowLayoutParams
-                        )
-                    } catch (_: Exception) {
+                    val windowScope = object : SmartNoticeWindowScope() {
+                        override val cutoutRect: Rect?
+                            get() = rect
+                        override val startSize: Size
+                            get() = size
+                        override val density: Density
+                            get() = this@with
                     }
-                }
-            }
 
-            alphaAnimatorComposeView = ObjectAnimator.ofFloat(
-                animationContainer,
-                "alpha",
-                animationContainer.alpha,
-                0f,
-                1f
-            ).apply {
-                this.duration = animatorDuration.value
-                var set = false
-                addUpdateListener {
-                    val alpha = (it.animatedValue) as Float
-                    if (alpha <= .05f && !set) {
-                        set = true
-                        animationContainer.setContent {
-                            Main {
-                                AppTheme {
-                                    Surface(
-                                        color = Color.Black,
-                                        contentColor = MaterialTheme.colorScheme.surface,
-                                    ) {
-                                        content(this@SmartNoticeWindow)
-                                    }
-                                }
+                    val targetSize = componentSize(
+                        windowScope
+                    ).toSize()
+
+                    widthAnimator = ValueAnimator.ofFloat(
+                        windowLayoutParams.width.toFloat(),
+                        targetSize.width,
+                    ).apply {
+                        this.duration = animatorDuration.value
+                        this.interpolator = localInterpolator
+                        addUpdateListener {
+                            val roundToInt = (it.animatedValue as Float).roundToInt()
+                            windowLayoutParams.width = roundToInt
+                            try {
+                                windowManager.updateViewLayout(
+                                    this@SmartNoticeWindow,
+                                    windowLayoutParams
+                                )
+                            } catch (_: Exception) {
                             }
                         }
                     }
-                }
-                addListener(
-                    object : AnimatorListenerAdapter() {
-                        override fun onAnimationEnd(animation: Animator) {
-                            super.onAnimationEnd(animation)
-                            if (!set) {
+
+                    heightAnimator = ValueAnimator.ofFloat(
+                        windowLayoutParams.height.toFloat(),
+                        targetSize.height,
+                    ).apply {
+                        this.duration = animatorDuration.value
+                        this.interpolator = localInterpolator
+                        addUpdateListener {
+                            val roundToInt = (it.animatedValue as Float).roundToInt()
+                            windowLayoutParams.height = roundToInt
+                            try {
+                                windowManager.updateViewLayout(
+                                    this@SmartNoticeWindow,
+                                    windowLayoutParams
+                                )
+                            } catch (_: Exception) {
+                            }
+                        }
+                    }
+
+                    offsetYAnimator = ValueAnimator.ofFloat(
+                        windowLayoutParams.y.toFloat(),
+                        if (notificationComponentExpandedState.value) {
+                            offsetY ?: getStatusBarHeight().toFloat()
+                        } else {
+                            offsetY ?: TweakApplication.shared.getFloat(
+                                Const.SmartNotice.SMART_NOTICE_OFFSET_Y,
+                                -1f
+                            ).dp.toPx()
+                        }
+                    ).apply {
+                        this.duration = animatorDuration.value
+                        this.interpolator = localInterpolator
+                        addUpdateListener {
+                            val roundToInt = (it.animatedValue as Float).roundToInt()
+                            windowLayoutParams.y = roundToInt
+                            try {
+                                windowManager.updateViewLayout(
+                                    this@SmartNoticeWindow,
+                                    windowLayoutParams
+                                )
+                            } catch (_: Exception) {
+                            }
+                        }
+                    }
+
+                    alphaAnimatorComposeView = ObjectAnimator.ofFloat(
+                        animationContainer,
+                        "alpha",
+                        animationContainer.alpha,
+                        0f,
+                        1f
+                    ).apply {
+                        this.duration = animatorDuration.value
+                        var set = false
+                        addUpdateListener {
+                            val alpha = (it.animatedValue) as Float
+                            if (alpha <= .05f && !set) {
+                                set = true
                                 animationContainer.setContent {
                                     Main {
                                         AppTheme {
@@ -631,30 +672,71 @@ class SmartNoticeWindow(
                                                 color = Color.Black,
                                                 contentColor = MaterialTheme.colorScheme.surface,
                                             ) {
-                                                content(this@SmartNoticeWindow)
+                                                content(this@SmartNoticeWindow, windowScope)
                                             }
                                         }
                                     }
                                 }
                             }
                         }
+                        addListener(
+                            object : AnimatorListenerAdapter() {
+                                override fun onAnimationEnd(animation: Animator) {
+                                    super.onAnimationEnd(animation)
+                                    if (!set) {
+                                        animationContainer.setContent {
+                                            Main {
+                                                AppTheme {
+                                                    Surface(
+                                                        color = Color.Black,
+                                                        contentColor = MaterialTheme.colorScheme.surface,
+                                                    ) {
+                                                        content(this@SmartNoticeWindow, windowScope)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        )
                     }
-                )
-            }
 
-            widthAnimator?.start()
-            heightAnimator?.start()
+                    val localRadius = TweakApplication.shared.getFloat(
+                        Const.SmartNotice.SMART_NOTICE_CUTOUT_RADIUS,
+                        SmartNoticeCapsuleDefault.Media.Radius.value
+                    )
 
-            heightAnimator?.addListener(
-                object : AnimatorListenerAdapter() {
-                    override fun onAnimationEnd(animation: Animator) {
-                        super.onAnimationEnd(animation)
-                        minimize(true)
+                    radiusAnimator = ObjectAnimator.ofFloat(
+                        this@SmartNoticeWindow,
+                        "radius",
+                        this@SmartNoticeWindow.radius,
+                        localRadius.dp.toPx()
+                    ).apply {
+                        this.duration = animatorDuration.value
                     }
+
+                    widthAnimator?.start()
+                    heightAnimator?.start()
+
+                    heightAnimator?.addListener(
+                        object : AnimatorListenerAdapter() {
+                            override fun onAnimationEnd(animation: Animator) {
+                                super.onAnimationEnd(animation)
+                                if (autoMinimize) {
+                                    minimize(true)
+                                }
+                            }
+                        }
+                    )
+
+                    offsetYAnimator?.start()
+                    alphaAnimatorComposeView?.start()
+                    radiusAnimator?.start()
                 }
-            )
-            alphaAnimatorComposeView?.start()
-        }
+            },
+            0
+        )
     }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -666,6 +748,7 @@ class SmartNoticeWindow(
                 if (mediaComponentExpanded.value) {
                     return@postDelayed
                 }
+                notificationComponentExpandedState.value = false
                 val musicObserve = TweakApplication.shared.getBoolean(
                     Const.SmartNotice.Observe.SMART_NOTICE_OBSERVE_MUSIC,
                     true
@@ -686,12 +769,15 @@ class SmartNoticeWindow(
                 if (alphaAnimatorComposeView != null && alphaAnimatorComposeView?.isRunning == true) {
                     alphaAnimatorComposeView?.cancel()
                 }
+                if (offsetYAnimator != null && offsetYAnimator?.isRunning == true) {
+                    offsetYAnimator?.cancel()
+                }
 
                 widthAnimator = ValueAnimator.ofFloat(
                     windowLayoutParams.width.toFloat(),
                     size.width
                 ).apply {
-                    this.interpolator = OvershootInterpolator()
+                    this.interpolator = localInterpolator
                     this.duration = animatorDuration.value
                     addUpdateListener {
                         val roundToInt = (it.animatedValue as Float).roundToInt()
@@ -710,7 +796,7 @@ class SmartNoticeWindow(
                     windowLayoutParams.height.toFloat(),
                     size.height
                 ).apply {
-                    this.interpolator = OvershootInterpolator()
+                    this.interpolator = localInterpolator
                     this.duration = animatorDuration.value
                     addUpdateListener {
                         val roundToInt = (it.animatedValue as Float).roundToInt()
@@ -731,7 +817,7 @@ class SmartNoticeWindow(
                     animationContainer.alpha,
                     0f
                 ).apply {
-                    this.duration = animatorDuration.value
+                    this.duration = animatorDuration.value / 2
                     addListener(
                         object : AnimatorListenerAdapter() {
                             override fun onAnimationEnd(animation: Animator) {
@@ -742,6 +828,29 @@ class SmartNoticeWindow(
                     )
                 }
 
+                offsetYAnimator = ValueAnimator.ofFloat(
+                    windowLayoutParams.y.toFloat(),
+                    with(density) {
+                        TweakApplication.shared.getFloat(
+                            Const.SmartNotice.SMART_NOTICE_OFFSET_Y,
+                            -1f
+                        ).dp.toPx()
+                    }
+                ).apply {
+                    this.duration = animatorDuration.value
+                    this.interpolator = localInterpolator
+                    addUpdateListener {
+                        val roundToInt = (it.animatedValue as Float).roundToInt()
+                        windowLayoutParams.y = roundToInt
+                        try {
+                            windowManager.updateViewLayout(
+                                this@SmartNoticeWindow,
+                                windowLayoutParams
+                            )
+                        } catch (_: Exception) {
+                        }
+                    }
+                }
 
                 widthAnimator?.start()
                 heightAnimator?.start()
@@ -756,6 +865,7 @@ class SmartNoticeWindow(
                     }
                 )
                 alphaAnimatorComposeView?.start()
+                offsetYAnimator?.start()
             },
             if (delay) {
                 animatorDelay.value
@@ -766,8 +876,11 @@ class SmartNoticeWindow(
     }
 
     fun showMedia(delay: Boolean = false, interpolator: Boolean = true) {
+        if (mediaComponentExpanded.value) {
+            return
+        }
+        notificationComponentExpandedState.value = false
         handler.removeCallbacksAndMessages(null)
-
         handler.postDelayed(
             {
                 mediaComponentExpanded.value = false
@@ -808,7 +921,7 @@ class SmartNoticeWindow(
                             }
                         }
                         if (interpolator) {
-                            this.interpolator = OvershootInterpolator()
+                            this.interpolator = localInterpolator
                         }
                         this.duration = animatorDuration.value
                     }
@@ -829,7 +942,7 @@ class SmartNoticeWindow(
                             }
                         }
                         if (interpolator) {
-                            this.interpolator = OvershootInterpolator()
+                            this.interpolator = localInterpolator
                         }
                         this.duration = animatorDuration.value
                     }
@@ -885,11 +998,16 @@ class SmartNoticeWindow(
                         )
                     }
 
+                    val localRadius = TweakApplication.shared.getFloat(
+                        Const.SmartNotice.SMART_NOTICE_CUTOUT_RADIUS,
+                        SmartNoticeCapsuleDefault.Media.Radius.value
+                    )
+
                     radiusAnimator = ObjectAnimator.ofFloat(
                         this@SmartNoticeWindow,
                         "radius",
                         this@SmartNoticeWindow.radius,
-                        SmartNoticeCapsuleDefault.Media.Radius.toPx()
+                        localRadius.dp.toPx()
                     ).apply {
                         this.duration = animatorDuration.value
                     }
@@ -908,7 +1026,7 @@ class SmartNoticeWindow(
                         }
                     ).apply {
                         if (interpolator) {
-                            this.interpolator = OvershootInterpolator()
+                            this.interpolator = localInterpolator
                         }
                         this.duration = animatorDuration.value
                         addUpdateListener {
@@ -941,6 +1059,7 @@ class SmartNoticeWindow(
 
     fun hideMedia() {
         mediaComponentExpanded.value = false
+        notificationComponentExpandedState.value = false
 
         if (widthAnimator != null && widthAnimator?.isRunning == true) {
             widthAnimator?.cancel()
@@ -965,7 +1084,7 @@ class SmartNoticeWindow(
                 windowLayoutParams.width.toFloat(),
                 size.width
             ).apply {
-                this.interpolator = OvershootInterpolator()
+                this.interpolator = localInterpolator
                 this.duration = animatorDuration.value
                 addUpdateListener {
                     val roundToInt = (it.animatedValue as Float).roundToInt()
@@ -984,7 +1103,7 @@ class SmartNoticeWindow(
                 windowLayoutParams.height.toFloat(),
                 size.height
             ).apply {
-                this.interpolator = OvershootInterpolator()
+                this.interpolator = localInterpolator
                 this.duration = animatorDuration.value
                 addUpdateListener {
                     val roundToInt = (it.animatedValue as Float).roundToInt()
@@ -1022,7 +1141,7 @@ class SmartNoticeWindow(
                     localOffsetY.dp.toPx()
                 }
             ).apply {
-                this.interpolator = OvershootInterpolator()
+                this.interpolator = localInterpolator
                 this.duration = animatorDuration.value
                 addUpdateListener {
                     val roundToInt = (it.animatedValue as Float).roundToInt()
@@ -1037,15 +1156,15 @@ class SmartNoticeWindow(
                     }
                 }
             }
-
+            val localRadius = TweakApplication.shared.getFloat(
+                Const.SmartNotice.SMART_NOTICE_CUTOUT_RADIUS,
+                SmartNoticeCapsuleDefault.Media.Radius.value
+            )
             radiusAnimator = ObjectAnimator.ofFloat(
                 this@SmartNoticeWindow,
                 "radius",
                 this@SmartNoticeWindow.radius,
-                TweakApplication.shared.getFloat(
-                    Const.SmartNotice.SMART_NOTICE_CUTOUT_RADIUS,
-                    min(size.width, size.height) / 2f
-                ).dp.toPx()
+                localRadius.dp.toPx()
             ).apply {
                 this.duration = animatorDuration.value
             }
@@ -1058,8 +1177,12 @@ class SmartNoticeWindow(
         }
     }
 
-    private fun mediaExpanded() {
-        mediaComponentExpanded.value = !mediaComponentExpanded.value
+    private fun mediaExpanded(expanded: Boolean? = null) {
+        if (expanded != null) {
+            mediaComponentExpanded.value = expanded
+        } else {
+            mediaComponentExpanded.value = !mediaComponentExpanded.value
+        }
         if (mediaComponentExpanded.value) {
             with(density) {
                 if (widthAnimator != null && widthAnimator?.isRunning == true) {
@@ -1079,7 +1202,7 @@ class SmartNoticeWindow(
                     windowLayoutParams.width.toFloat(),
                     SmartNoticeCapsuleDefault.Media.ExpandedWidth.toPx()
                 ).apply {
-                    this.interpolator = OvershootInterpolator()
+                    this.interpolator = localInterpolator
                     this.duration = animatorDuration.value
                     addUpdateListener {
                         val roundToInt = (it.animatedValue as Float).roundToInt()
@@ -1099,7 +1222,7 @@ class SmartNoticeWindow(
                     windowLayoutParams.height.toFloat(),
                     SmartNoticeCapsuleDefault.Media.ExpandedHeight.toPx()
                 ).apply {
-                    this.interpolator = OvershootInterpolator()
+                    this.interpolator = localInterpolator
                     this.duration = animatorDuration.value
                     addUpdateListener {
                         val roundToInt = (it.animatedValue as Float).roundToInt()
@@ -1128,7 +1251,7 @@ class SmartNoticeWindow(
                     windowLayoutParams.y.toFloat(),
                     getStatusBarHeight().toFloat()
                 ).apply {
-                    this.interpolator = OvershootInterpolator()
+                    this.interpolator = localInterpolator
                     this.duration = animatorDuration.value
                     addUpdateListener {
                         val roundToInt =
@@ -1178,6 +1301,18 @@ class SmartNoticeWindow(
                     .fillMaxSize()
                     .clickable {
                         mediaExpanded()
+                        try {
+                            mediaHandler.removeCallbacks(mediaFolder)
+                        } catch (_: Exception) {
+                        }
+                        mediaHandler.postDelayed(
+                            mediaFolder,
+                            if (mediaComponentExpanded.value) {
+                                15_000
+                            } else {
+                                10_000
+                            }
+                        )
                     }
             ) {
                 SharedBox(
@@ -1393,6 +1528,17 @@ class SmartNoticeWindow(
         }
     }
 
+    private val mediaHandler = Handler(Looper.getMainLooper())
+    private val mediaFolder = object : Runnable {
+        override fun run() {
+            mediaExpanded(false)
+            try {
+                mediaHandler.removeCallbacks(this)
+            } catch (_: Exception) {
+            }
+        }
+    }
+
     @OptIn(ExperimentalSharedTransitionApi::class)
     @Composable
     private fun ExpandedBox(
@@ -1405,8 +1551,6 @@ class SmartNoticeWindow(
         val playAnimate = remember { Animatable(0f) }
         var elapsed by rememberSaveable { mutableFloatStateOf(0f) }
         var isDragging by remember { mutableStateOf(false) }
-        var minimize by rememberSaveable { mutableIntStateOf(10) }
-        var timerJob by remember { mutableStateOf<Job?>(null) }
 
         LaunchedEffect(mediaStruct) {
             snapshotFlow {
@@ -1415,14 +1559,15 @@ class SmartNoticeWindow(
                 .onEach { state ->
                     val isPlay = state == PlaybackState.STATE_PLAYING
                     val current =
-                        (callback.mediaController.playbackState?.position
-                            ?: 0L).toFloat()
+                        (callback.mediaController.playbackState?.position ?: 0L).toFloat()
                     playAnimate.snapTo(current)
+                    try {
+                        mediaHandler.removeCallbacks(mediaFolder)
+                    } catch (_: Exception) {
+                    }
                     if (isPlay) {
-                        minimize = 10
-                        timerJob?.cancel()
+                        mediaHandler.postDelayed(mediaFolder, 15_000)
                         if (!isDragging) {
-
                             playAnimate.animateTo(
                                 targetValue = mediaStruct.duration.toFloat(),
                                 animationSpec = tween(
@@ -1433,16 +1578,7 @@ class SmartNoticeWindow(
                         }
                     } else {
                         playAnimate.stop()
-
-                        // 暂停后10秒最小化
-                        timerJob = launch {
-                            while (isActive && minimize.let { minimize--; minimize > 0 }) {
-                                delay(1000)
-                            }
-                            if (!mediaStruct.isPlaying()) {
-                                mediaExpanded()
-                            }
-                        }
+                        mediaHandler.postDelayed(mediaFolder, 10_000)
                     }
                 }.launchIn(this)
         }
@@ -1552,7 +1688,7 @@ class SmartNoticeWindow(
                     Icon(
                         painter = painterResource(R.drawable.ic_up),
                         contentDescription = null,
-                        modifier = Modifier 
+                        modifier = Modifier
                             .size(14.dp)
                             .sharedBounds(
                                 sharedContentState = rememberSharedContentState("logo"),
@@ -1699,6 +1835,61 @@ class SmartNoticeWindow(
                         textAlign = TextAlign.End
                     )
                 }
+            }
+        }
+    }
+
+    var notificationComponentExpandedState = MutableStateFlow(false)
+
+    fun notify(
+        sbn: StatusBarNotification
+    ) {
+        val size = _islandCustomSize.value
+
+        val rect = if (_cutoutRectListState.value.isEmpty()) {
+            null
+        } else {
+            val first = _cutoutRectListState.value.first()
+            val last = _cutoutRectListState.value.last()
+            Rect(
+                first.left,
+                first.top,
+                last.right,
+                last.bottom
+            )
+        }
+
+        val windowScope = object : SmartNoticeWindowScope() {
+            override val cutoutRect: Rect?
+                get() = rect
+            override val startSize: Size
+                get() = size
+            override val density: Density
+                get() = TweakApplication.density
+        }
+
+        val impl: NotificationImpl? = when (sbn.packageName) {
+            // 微信QQ接口一样的
+            "com.tencent.mobileqq", "com.tencent.mm" -> {
+                QQNotificationImpl(
+                    sbn,
+                    this,
+                    scope = windowScope,
+                    density,
+                    notificationComponentExpandedState
+                )
+            }
+
+            else -> {
+                null
+            }
+        }
+
+        impl?.also {
+            toast(
+                { it.componentSize() }
+            ) { _, _ ->
+                it.Content()
             }
         }
     }

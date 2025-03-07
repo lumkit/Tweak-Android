@@ -92,7 +92,7 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = versionCodeFormat.format(Date()).toInt().also { println("version code: $it") }
 //        versionCode = 1
-        versionName = "0.0.9-Alpha"
+        versionName = "0.0.12-Alpha"
 
         renderscriptSupportModeEnabled = true
     }

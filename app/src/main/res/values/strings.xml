@@ -78,5 +78,18 @@
     <string name="text_smart_notice_reset_properties_msg">是否重置灵动通知配置？点击【确认按钮】继续</string>
     <string name="text_smart_notice_always_show">息屏常显</string>
     <string name="text_smart_notice_always_show_tips">OLED屏幕下支持息屏显示</string>
+    <string name="text_cross">关闭</string>
+    <string name="text_apps_manager">应用管理</string>
+    <string name="text_smart_notice_observe_music_switch">灵动音乐通知</string>
+    <string name="text_search_app">搜索应用名或包名</string>
+    <string name="text_smart_notice_observe_notification">消息通知</string>
+    <string name="text_smart_notice_observe_notification_tips">让灵动通知拥有接收消息的能力</string>
+    <string name="text_smart_notice_observe_notification_switch">应用消息通知</string>
+    <string name="text_notification_no_title">无标题</string>
+    <string name="text_notification_no_content">无内容</string>
+    <string name="text_smart_notice_animation_interpolator">动画效果</string>
+    <string name="text_smart_notice_animation_interpolator_linear">线性动画</string>
+    <string name="text_smart_notice_animation_interpolator_overshoot">非线性回弹动画</string>
+    <string name="text_smart_notice_animation_interpolator_accelerate_decelerate">非线性加速动画</string>
 
 </resources>

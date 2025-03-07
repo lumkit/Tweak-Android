@@ -294,6 +294,7 @@ class RuntimeModeViewModel(
             requiredPermission.addAll(
                 listOf(
                     Manifest.permission.MANAGE_EXTERNAL_STORAGE,
+                    Manifest.permission.QUERY_ALL_PACKAGES
                 )
             )
         }
@@ -301,6 +302,7 @@ class RuntimeModeViewModel(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             requiredPermission.add(Manifest.permission.POST_NOTIFICATIONS)
         }
+
 
         requiredPermission.onEach {
             when (it) {
@@ -332,6 +334,7 @@ class RuntimeModeViewModel(
 
         val result = ReusableShells.execSync(stringBuilder.toString())
         Log.d("grantPermission", result)
+        TweakApplication.updateApps()
     }
 
     fun finish() {

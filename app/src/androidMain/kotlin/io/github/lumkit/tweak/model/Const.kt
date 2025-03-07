@@ -1,5 +1,8 @@
 package io.github.lumkit.tweak.model
 
+import io.github.lumkit.tweak.ui.local.json
+import kotlinx.serialization.encodeToString
+
 object Const {
     const val APP_ENABLED_ACCESSIBILITY_SERVICE = "enabled_accessibility_service"
     const val APP_SHARED_RUNTIME_STATUS = "runtime_status"
@@ -40,6 +43,7 @@ object Const {
         const val SMART_NOTICE_CUTOUT_RECT_LIST = "smart_notice_cutout_rect_list"
         const val SMART_NOTICE_ANIMATION_DELAY = "smart_notice_animation_delay"
         const val SMART_NOTICE_ANIMATION_DURATION = "smart_notice_animation_duration"
+        const val SMART_NOTICE_ANIMATION_INTERPOLATOR = "smart_notice_animation_interpolator"
 
         const val SMART_NOTICE_WIDTH = "smart_notice_width"
         const val SMART_NOTICE_HEIGHT = "smart_notice_height"
@@ -58,6 +62,41 @@ object Const {
         object Observe {
             const val SMART_NOTICE_OBSERVE_CHARGE = "smart_notice_observe_charge"
             const val SMART_NOTICE_OBSERVE_MUSIC = "smart_notice_observe_music"
+            const val SMART_NOTICE_OBSERVE_NOTIFICATION = "smart_notice_observe_notification"
+        }
+
+        const val SMART_NOTICE_MEDIA_FILTER = "smart_notice_media_filter"
+        const val SMART_NOTICE_NOTIFICATION_FILTER = "smart_notice_notification_filter"
+
+        val MEDIA_FILTER_DEFAULT by lazy {
+            json.encodeToString(
+                listOf(
+                    "com.tencent.qqmusic",                       // QQ音乐
+                    "com.netease.cloudmusic",                    // 网易云音乐
+                    "com.kugou.android",                         // 酷狗音乐
+                    "cn.kuwo.player",                            // 酷我音乐
+                    "cmccwm.mobilemusic",                        // 咪咕音乐
+                    "com.apple.android.music",                   // Apple Music
+                    "com.spotify.music",                         // Spotify
+                    "com.google.android.apps.youtube.music",     // YouTube Music
+                    "com.soundcloud.android",                    // SoundCloud
+                    "deezer.android.app",                        // Deezer
+                    "com.pandora.android",                       // Pandora
+                    "com.amazon.music",                          // Amazon Music
+                    "com.aspiro.tidal",                          // Tidal
+                    "com.clearchannel.iheartradio.controller",     // iHeartRadio
+                    "com.joox.fm"                                // JOOX Music
+                )
+            )
+        }
+
+        val NOTIFICATION_FILTER_DEFAULT by lazy {
+            json.encodeToString(
+                listOf(
+                    "com.tencent.mobileqq",
+                    "com.tencent.mm",
+                )
+            )
         }
     }
 }

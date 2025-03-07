@@ -2,6 +2,7 @@ package io.github.lumkit.tweak.services
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -18,6 +19,7 @@ import android.os.BatteryManager
 import android.os.Build
 import android.os.IBinder
 import android.provider.Settings
+import android.service.notification.StatusBarNotification
 import android.view.Gravity
 import android.view.WindowManager
 import android.view.WindowManager.LayoutParams
@@ -55,8 +57,10 @@ import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.common.util.ServiceUtils
 import io.github.lumkit.tweak.common.util.getDiveSize
 import io.github.lumkit.tweak.model.Const
+import io.github.lumkit.tweak.services.SmartNoticeService.Companion.updateNotificationFilter
 import io.github.lumkit.tweak.services.media.MediaCallback
 import io.github.lumkit.tweak.ui.lifecycle.ComposeViewLifecycleOwner
+import io.github.lumkit.tweak.ui.local.json
 import io.github.lumkit.tweak.ui.screen.ScreenRoute
 import io.github.lumkit.tweak.ui.screen.notice.SmartNoticeViewModel
 import io.github.lumkit.tweak.ui.token.SmartNoticeCapsuleDefault
@@ -96,6 +100,10 @@ class SmartNoticeService : Service() {
         const val ACTION_CUTOUT_HEIGHT = "ACTION_CUTOUT_HEIGHT"
         const val ACTION_CUTOUT_RADIUS = "ACTION_CUTOUT_RADIUS"
         const val ACTION_MEDIA_OBSERVE = "ACTION_MEDIA_OBSERVE"
+        const val ACTION_UPDATE_MEDIA_FILTER = "ACTION_UPDATE_MEDIA_FILTER"
+        const val ACTION_NOTIFICATION_OBSERVE = "ACTION_NOTIFICATION_OBSERVE"
+        const val ACTION_UPDATE_NOTIFICATION_FILTER = "ACTION_UPDATE_NOTIFICATION_FILTER"
+        const val ACTION_POST_NOTIFICATION = "ACTION_POST_NOTIFICATION"
 
         fun canStartSmartNotice(): Boolean {
             val switch =
@@ -230,6 +238,40 @@ class SmartNoticeService : Service() {
                 startService(intent)
             }
         }
+
+        fun Context.updateMediaFilter() {
+            if (canStartSmartNotice() && isRunning() && runBlocking { SmartNoticeViewModel.checkAccessibilityService() }) {
+                val intent = Intent(this, SmartNoticeService::class.java)
+                intent.action = ACTION_UPDATE_MEDIA_FILTER
+                startService(intent)
+            }
+        }
+
+        fun Context.updateNotificationObserve(observe: Boolean) {
+            if (canStartSmartNotice() && isRunning() && runBlocking { SmartNoticeViewModel.checkAccessibilityService() }) {
+                val intent = Intent(this, SmartNoticeService::class.java)
+                intent.action = ACTION_NOTIFICATION_OBSERVE
+                intent.putExtra("observe", observe)
+                startService(intent)
+            }
+        }
+
+        fun Context.updateNotificationFilter() {
+            if (canStartSmartNotice() && isRunning() && runBlocking { SmartNoticeViewModel.checkAccessibilityService() }) {
+                val intent = Intent(this, SmartNoticeService::class.java)
+                intent.action = ACTION_UPDATE_NOTIFICATION_FILTER
+                startService(intent)
+            }
+        }
+
+        fun Context.postNotification(notification: StatusBarNotification?) {
+            if (canStartSmartNotice() && isRunning() && runBlocking { SmartNoticeViewModel.checkAccessibilityService() }) {
+                val intent = Intent(this, SmartNoticeService::class.java)
+                intent.action = ACTION_POST_NOTIFICATION
+                intent.putExtra("notification", notification)
+                startService(intent)
+            }
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -298,21 +340,24 @@ class SmartNoticeService : Service() {
             TweakAccessibilityService.mediaSessionManager?.apply {
                 addOnActiveSessionsChangedListener(
                     listenerForActiveSessions,
-                    TweakAccessibilityService.componentName
+                    TweakAccessibilityService.componentName,
                 )
 
-                getActiveSessions(TweakAccessibilityService.componentName).forEach { controller ->
-                    if (callbackMap.value[controller.packageName] != null)
-                        return@forEach
-
+                val filterText = TweakApplication.shared.getString(
+                    Const.SmartNotice.SMART_NOTICE_MEDIA_FILTER,
+                    null
+                ) ?: Const.SmartNotice.MEDIA_FILTER_DEFAULT
+                val filter = json.decodeFromString<List<String>>(filterText)
+                val map = mutableMapOf<String, MediaCallback>()
+                getActiveSessions(TweakAccessibilityService.componentName).filter {
+                    filter.contains(it.packageName)
+                }.forEach { controller ->
                     val callback = MediaCallback(controller, this@SmartNoticeService)
-                    val map = mutableMapOf<String, MediaCallback>()
                     map.putAll(callbackMap.value)
                     map[controller.packageName] = callback
                     controller.registerCallback(callback)
-
-                    callbackMap.value = map
                 }
+                callbackMap.value = map
             }
         }
     }
@@ -452,7 +497,8 @@ class SmartNoticeService : Service() {
                 smartNoticeView,
                 params,
             )
-        }catch (_: Exception) {}
+        } catch (_: Exception) {
+        }
 
         smartNoticeLifecycleOwner?.onStart()
         smartNoticeLifecycleOwner?.onResume()
@@ -515,7 +561,11 @@ class SmartNoticeService : Service() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 Intent.ACTION_SCREEN_OFF -> {
-                    if (!TweakApplication.shared.getBoolean(Const.SmartNotice.SMART_NOTICE_ALWAYS_SHOW, false)) {
+                    if (!TweakApplication.shared.getBoolean(
+                            Const.SmartNotice.SMART_NOTICE_ALWAYS_SHOW,
+                            false
+                        )
+                    ) {
                         smartNoticeView?.hide()
                     } else {
                         runBlocking {
@@ -524,6 +574,7 @@ class SmartNoticeService : Service() {
                         }
                     }
                 }
+
                 else -> {
                     if (smartNoticeView?.isShow == false) {
                         runBlocking {
@@ -537,16 +588,19 @@ class SmartNoticeService : Service() {
     }
 
     private val listenerForActiveSessions = OnActiveSessionsChangedListener { controllers ->
-        controllers?.forEach { controller ->
-            if (callbackMap.value[controller.packageName] != null)
-                return@OnActiveSessionsChangedListener
+        val filterText = TweakApplication.shared.getString(
+            Const.SmartNotice.SMART_NOTICE_MEDIA_FILTER,
+            null
+        ) ?: Const.SmartNotice.MEDIA_FILTER_DEFAULT
 
+
+        val filter = json.decodeFromString<List<String>>(filterText)
+        controllers?.filter { filter.contains(it.packageName) }?.forEach { controller ->
             val callback = MediaCallback(controller, this@SmartNoticeService)
             val map = mutableMapOf<String, MediaCallback>()
             map.putAll(callbackMap.value)
             map[controller.packageName] = callback
             controller.registerCallback(callback)
-
             callbackMap.value = map
         }
     }
@@ -616,6 +670,7 @@ class SmartNoticeService : Service() {
             }
 
             ACTION_POWER_CONNECTED -> {
+                smartNoticeView?.notificationComponentExpandedState?.value = false
                 smartNoticeView?.toast(
                     componentSize = {
                         val diveSize = getDiveSize()
@@ -626,12 +681,13 @@ class SmartNoticeService : Service() {
                             height = 32.dp
                         )
                     }
-                ) {
-                    Charge(true, it)
+                ) {view, _ ->
+                    Charge(true, view)
                 }
             }
 
             ACTION_POWER_DISCONNECTED -> {
+                smartNoticeView?.notificationComponentExpandedState?.value = false
                 smartNoticeView?.toast(
                     componentSize = {
                         val diveSize = getDiveSize()
@@ -642,8 +698,8 @@ class SmartNoticeService : Service() {
                             height = 32.dp
                         )
                     }
-                ) {
-                    Charge(false, it)
+                ) {view, _ ->
+                    Charge(false, view)
                 }
             }
 
@@ -720,7 +776,10 @@ class SmartNoticeService : Service() {
             ACTION_CUTOUT_HEIGHT -> {
                 if (topMediaCallback.value == null) {
                     val height =
-                        intent.getFloatExtra("height", SmartNoticeCapsuleDefault.CapsuleHeight.value)
+                        intent.getFloatExtra(
+                            "height",
+                            SmartNoticeCapsuleDefault.CapsuleHeight.value
+                        )
                     try {
                         params.height = with(TweakApplication.density) {
                             height.dp.roundToPx()
@@ -760,6 +819,40 @@ class SmartNoticeService : Service() {
                     smartNoticeView?.hideMedia()
                 }
             }
+
+            ACTION_UPDATE_MEDIA_FILTER -> {
+                TweakAccessibilityService.mediaSessionManager?.apply {
+                    val filterText = TweakApplication.shared.getString(
+                        Const.SmartNotice.SMART_NOTICE_MEDIA_FILTER,
+                        null
+                    ) ?: Const.SmartNotice.MEDIA_FILTER_DEFAULT
+                    val filter = json.decodeFromString<List<String>>(filterText)
+                    val map = mutableMapOf<String, MediaCallback>()
+                    getActiveSessions(TweakAccessibilityService.componentName).filter {
+                        filter.contains(it.packageName)
+                    }.forEach { controller ->
+                        val callback = MediaCallback(controller, this@SmartNoticeService)
+                        map.putAll(callbackMap.value)
+                        map[controller.packageName] = callback
+                        controller.registerCallback(callback)
+                    }
+                    callbackMap.value = map
+                    if (map[topMediaCallback.value?.mediaController?.packageName] == null) {
+                        topMediaCallback.value = map.values.firstOrNull()
+                    }
+                }
+            }
+
+            ACTION_POST_NOTIFICATION -> {
+                val notification: StatusBarNotification? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent.getParcelableExtra("notification", StatusBarNotification::class.java)
+                } else {
+                    intent.getParcelableExtra("notification")
+                }
+                if (notification != null) {
+                    smartNoticeView?.notify(notification)
+                }
+            }
         }
 
         return super.onStartCommand(intent, flags, startId)
@@ -780,9 +873,11 @@ class SmartNoticeService : Service() {
         callbackMap.value.forEach { (_, callback) ->
             callback.mediaController.unregisterCallback(callback)
         }
-        TweakAccessibilityService.mediaSessionManager?.removeOnActiveSessionsChangedListener(
-            listenerForActiveSessions
-        )
+        try {
+            TweakAccessibilityService.mediaSessionManager?.removeOnActiveSessionsChangedListener(
+                listenerForActiveSessions
+            )
+        } catch (_: Exception) { }
         unregisterReceiver(orientationChangeReceiver)
         unregisterReceiver(batteryReceiver)
         unregisterReceiver(chargingReceiver)

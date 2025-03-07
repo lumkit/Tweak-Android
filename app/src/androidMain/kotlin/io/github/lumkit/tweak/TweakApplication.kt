@@ -2,6 +2,8 @@ package io.github.lumkit.tweak
 
 import android.annotation.SuppressLint
 import android.app.Application
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.os.Process
 import android.provider.Settings
@@ -11,10 +13,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.Density
 import androidx.core.content.edit
+import io.github.lumkit.tweak.common.util.AppListHelper
 import io.github.lumkit.tweak.data.RuntimeStatus
+import io.github.lumkit.tweak.model.AppInfo
 import io.github.lumkit.tweak.model.Const
+import io.github.lumkit.tweak.services.AppChangeReceiver
 import io.github.lumkit.tweak.ui.local.StorageStore
 import io.github.lumkit.tweak.ui.screen.runtime.RuntimeModeViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import rikka.shizuku.Shizuku
 
 class TweakApplication : Application() {
@@ -31,13 +39,41 @@ class TweakApplication : Application() {
             runtimeStatus = status
             shared.edit(commit = true) { putInt(Const.APP_SHARED_RUNTIME_STATUS, status.ordinal) }
         }
+        var userApps by mutableStateOf(listOf<AppInfo>())
+        var systemApps by mutableStateOf(listOf<AppInfo>())
+        var backupApps by mutableStateOf(listOf<AppInfo>())
+        var bootableApps by mutableStateOf(listOf<AppInfo>())
+        lateinit var appListHelper: AppListHelper
+        private val ioScope = CoroutineScope(Dispatchers.IO)
+
+        fun updateApps() {
+            ioScope.launch {
+                try {
+                    userApps = appListHelper.getUserAppList()
+                    systemApps = appListHelper.getSystemAppList()
+                    backupApps = appListHelper.getBackupedAppList()
+                    bootableApps = appListHelper.getBootableApps()
+                }catch (_: Exception) {}
+            }
+        }
     }
 
     private lateinit var runtimeModeViewModel: RuntimeModeViewModel
+    private lateinit var appChangeReceiver: AppChangeReceiver
 
     override fun onCreate() {
         super.onCreate()
         init()
+
+        // 更新应用列表
+        appChangeReceiver = AppChangeReceiver()
+        val intentFilter = IntentFilter().apply {
+            addAction(Intent.ACTION_PACKAGE_ADDED)
+            addAction(Intent.ACTION_PACKAGE_REMOVED)
+            addAction(Intent.ACTION_PACKAGE_REPLACED)
+            addDataScheme("package")
+        }
+        registerReceiver(appChangeReceiver, intentFilter)
     }
 
     @SuppressLint("HardwareIds")
@@ -45,6 +81,7 @@ class TweakApplication : Application() {
         application = this
         shared = this.getSharedPreferences(Const.APP_SHARED_PREFERENCE_ID, MODE_PRIVATE)
         density = Density(this)
+        appListHelper = AppListHelper(this)
 
         // 验证运行的设备是否被更改
         val androidId = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)

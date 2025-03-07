@@ -23,7 +23,6 @@ class TweakAccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-
     }
 
     override fun onInterrupt() {

@@ -727,16 +727,9 @@ fun ContentList(
 
         // 音乐
         run {
-            var observed by rememberSaveable {
-                mutableStateOf(
-                    storageStore.getBoolean(
-                        Const.SmartNotice.Observe.SMART_NOTICE_OBSERVE_MUSIC,
-                        true
-                    )
-                )
-            }
-
             var attrDialog by rememberSaveable { mutableStateOf(false) }
+
+            MediaDetailDialog(attrDialog) { attrDialog = false }
 
             DetailItem(
                 onClick = {
@@ -753,16 +746,40 @@ fun ContentList(
                     )
                 },
                 actions = {
-                    Switch(
-                        checked = observed,
-                        onCheckedChange = {
-                            observed = it
-                            storageStore.putBoolean(
-                                Const.SmartNotice.Observe.SMART_NOTICE_OBSERVE_MUSIC,
-                                it
-                            )
-                            activity.updateMediaObserve(it)
-                        }
+                    Icon(
+                        painter = painterResource(R.drawable.ic_right),
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            )
+        }
+
+        // 消息通知
+        run {
+            var attrDialog by rememberSaveable { mutableStateOf(false) }
+
+            NotificationDetailDialog(attrDialog) { attrDialog = false }
+
+            DetailItem(
+                onClick = {
+                    attrDialog = true
+                },
+                title = {
+                    Text(
+                        text = stringResource(R.string.text_smart_notice_observe_notification)
+                    )
+                },
+                subTitle = {
+                    Text(
+                        text = stringResource(R.string.text_smart_notice_observe_notification_tips)
+                    )
+                },
+                actions = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_right),
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             )
@@ -1604,6 +1621,96 @@ private fun SetNoticeFieldBox(
                 )
             }
 
+            // animation interpolator
+            run {
+                var interpolator by rememberSaveable {
+                    mutableStateOf(SmartNoticeWindow.Companion.SmartNoticeInterpolator.Overshoot)
+                }
+
+                LaunchedEffect(Unit) {
+                    try {
+                        val index = storageStore.getInt(
+                            Const.SmartNotice.SMART_NOTICE_ANIMATION_INTERPOLATOR,
+                            default = SmartNoticeWindow.Companion.SmartNoticeInterpolator.Overshoot.ordinal
+                        )
+                        interpolator =
+                            SmartNoticeWindow.Companion.SmartNoticeInterpolator.entries[index]
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+
+                FolderItem(
+                    title = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = stringResource(R.string.text_smart_notice_animation_interpolator),
+                            )
+                        }
+                    },
+                    trailingIcon = {
+                        var expanded by rememberSaveable { mutableStateOf(false) }
+                        Column {
+                            TextButton(
+                                onClick = {
+                                    expanded = true
+                                }
+                            ) {
+                                Box(
+                                    contentAlignment = Alignment.CenterEnd,
+                                ) {
+                                    Text(
+                                        text = SmartNoticeWindow.Companion
+                                            .SmartNoticeInterpolator
+                                            .AccelerateDecelerate
+                                            .asString(),
+                                        modifier = Modifier.height(0.dp)
+                                    )
+                                    Text(
+                                        text = interpolator.asString()
+                                    )
+                                }
+                            }
+                            DropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                SmartNoticeWindow.Companion
+                                    .SmartNoticeInterpolator
+                                    .entries
+                                    .forEach {
+                                        DropdownMenuItem(
+                                            leadingIcon = {
+                                                Checkbox(
+                                                    checked = interpolator == it,
+                                                    onCheckedChange = null
+                                                )
+                                            },
+                                            text = {
+                                                Text(
+                                                    text = it.asString()
+                                                )
+                                            },
+                                            onClick = {
+                                                expanded = false
+                                                storageStore.putInt(
+                                                    Const.SmartNotice.SMART_NOTICE_ANIMATION_INTERPOLATOR,
+                                                    it.ordinal
+                                                )
+                                                interpolator = it
+                                            }
+                                        )
+                                    }
+                            }
+                        }
+                    }
+                )
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -1719,6 +1826,10 @@ private fun SetNoticeFieldBox(
                                         storageStore.putLong(
                                             Const.SmartNotice.SMART_NOTICE_ANIMATION_DELAY,
                                             5000L
+                                        )
+                                        storageStore.putInt(
+                                            Const.SmartNotice.SMART_NOTICE_ANIMATION_INTERPOLATOR,
+                                            SmartNoticeWindow.Companion.SmartNoticeInterpolator.Overshoot.ordinal
                                         )
                                         activity.reloadProperties()
                                         enabled = true
