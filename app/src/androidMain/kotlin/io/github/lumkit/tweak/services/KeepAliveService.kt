@@ -36,12 +36,6 @@ class KeepAliveService: Service() {
 
     private fun startPersistentTaskService() {
         CoroutineScope(Dispatchers.IO).launch {
-            // 启动无障碍服务
-            if (TweakApplication.shared.getBoolean(Const.APP_ENABLED_ACCESSIBILITY_SERVICE, false)) {
-                ReusableShells.execSync("settings put secure enabled_accessibility_services ${packageName}/.services.TweakAccessibilityService")
-                ReusableShells.execSync("settings put secure accessibility_enabled 1")
-            }
-
             val intent = Intent(this@KeepAliveService, PersistentTaskService::class.java)
             while (true) {
                 startService(intent)

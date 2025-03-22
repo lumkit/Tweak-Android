@@ -3,32 +3,22 @@ package io.github.lumkit.tweak.services.media
 import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.PlaybackState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import io.github.lumkit.tweak.services.SmartNoticeService
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Observer
+import io.github.lumkit.tweak.model.LiveData
+import io.github.lumkit.tweak.ui.screen.notice.model.MusicPlugin
 
 class MediaCallback(
     val mediaController: MediaController,
-    private val context: SmartNoticeService,
+    private val plugin: MusicPlugin,
 ) : MediaController.Callback() {
 
     private var metadata: MediaMetadata? = null
-    var mediaStruct by mutableStateOf(
-        MediaStruct()
-    )
+    val struct: LiveData<MediaStruct?> = LiveData()
 
     init {
-        if (mediaController.metadata != null && mediaController.playbackState != null) {
-            metadata = mediaController.metadata
-            mediaController.playbackState?.let {
-                mediaStruct = mediaStruct.copy(
-                    playbackState = it
-                )
-            }
-            updateMediaStruct()
-        }
-        context.topMediaCallback.value = this
+        metadata = mediaController.metadata
+        updateMediaStruct()
     }
 
     override fun onMetadataChanged(metadata: MediaMetadata?) {
@@ -39,46 +29,79 @@ class MediaCallback(
 
     override fun onPlaybackStateChanged(state: PlaybackState?) {
         super.onPlaybackStateChanged(state)
-        if (state == null) {
-            return
-        }
-        when (state.state) {
-            PlaybackState.STATE_PLAYING, PlaybackState.STATE_PAUSED -> {
-                context.topMediaCallback.value = this
+        updateMediaStruct()
+        when (state?.state) {
+            PlaybackState.STATE_PLAYING -> {
+                plugin.topMediaCallback.value = this
             }
 
-            else -> Unit
+            PlaybackState.STATE_BUFFERING -> {
+
+            }
+
+            PlaybackState.STATE_CONNECTING -> {
+
+            }
+
+            PlaybackState.STATE_ERROR -> {
+
+            }
+
+            PlaybackState.STATE_FAST_FORWARDING -> {
+
+            }
+
+            PlaybackState.STATE_NONE -> {
+
+            }
+
+            PlaybackState.STATE_PAUSED -> {
+
+            }
+
+            PlaybackState.STATE_REWINDING -> {
+
+            }
+
+            PlaybackState.STATE_SKIPPING_TO_NEXT -> {
+
+            }
+
+            PlaybackState.STATE_SKIPPING_TO_PREVIOUS -> {
+
+            }
+
+            PlaybackState.STATE_SKIPPING_TO_QUEUE_ITEM -> {
+
+            }
+
+            PlaybackState.STATE_STOPPED -> {
+
+            }
         }
-        mediaStruct = mediaStruct.copy(
-            playbackState = state
-        )
-        updateMediaStruct()
     }
 
     private fun updateMediaStruct() {
-        mediaStruct = mediaStruct.copy(
+        struct.value = (struct.value ?: MediaStruct()).copy(
             packageName = mediaController.packageName,
             title = (metadata?.getText(MediaMetadata.METADATA_KEY_TITLE) ?: "").toString(),
             artist = (metadata?.getText(MediaMetadata.METADATA_KEY_ARTIST) ?: "").toString(),
             cover = metadata?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART),
-            duration = metadata?.getLong(MediaMetadata.METADATA_KEY_DURATION) ?: 0L
+            duration = metadata?.getLong(MediaMetadata.METADATA_KEY_DURATION) ?: 0L,
         )
-        // TODO 获取歌词
+
+        mediaController.playbackState?.let {
+            struct.value = struct.value?.copy(
+                playbackState = it
+            )
+        }
+
+        println("更新")
     }
 
     override fun onSessionDestroyed() {
         super.onSessionDestroyed()
-        context.callbackMap.value.forEach { (k, v) ->
-            if (mediaController.packageName == k) {
-                v.mediaController.unregisterCallback(v)
-                val map = mutableMapOf<String, MediaCallback>()
-                map.putAll(context.callbackMap.value)
-                map.remove(k)
-                context.callbackMap.value = map
-            }
-        }
-        if (context.topMediaCallback.value?.mediaController?.packageName == mediaController.packageName) {
-            context.topMediaCallback.value = null
-        }
+        plugin.factory.minimize()
+        struct.clear()
     }
 }

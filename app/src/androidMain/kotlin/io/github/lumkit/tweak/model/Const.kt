@@ -38,10 +38,9 @@ object Const {
         // 游戏模式
         const val SMART_NOTICE_GAME_MODE = "smart_notice_game_mode"
 
-        // 宽高属性
-        const val SMART_NOTICE_PADDING = "smart_notice_padding"
+        const val SMART_NOTICE_LOCAL_DATA = "SMART_NOTICE_LOCAL_DATA"
+
         const val SMART_NOTICE_CUTOUT_RECT_LIST = "smart_notice_cutout_rect_list"
-        const val SMART_NOTICE_ANIMATION_DELAY = "smart_notice_animation_delay"
         const val SMART_NOTICE_ANIMATION_DURATION = "smart_notice_animation_duration"
         const val SMART_NOTICE_ANIMATION_INTERPOLATOR = "smart_notice_animation_interpolator"
 
@@ -58,9 +57,12 @@ object Const {
 
         // 息屏常显
         const val SMART_NOTICE_ALWAYS_SHOW = "smart_notice_always_show"
+        const val SMART_NOTICE_SCREEN_LOCKED_ALWAYS_SHOW = "smart_notice_screen_locked_always_show"
 
         object Observe {
             const val SMART_NOTICE_OBSERVE_CHARGE = "smart_notice_observe_charge"
+            const val SMART_NOTICE_OBSERVE_SCREEN_UNLOCKED = "smart_notice_observe_screen_unlocked"
+            const val SMART_NOTICE_OBSERVE_VOLUME_CHANGED = "smart_notice_observe_volume_changed"
             const val SMART_NOTICE_OBSERVE_MUSIC = "smart_notice_observe_music"
             const val SMART_NOTICE_OBSERVE_NOTIFICATION = "smart_notice_observe_notification"
         }

@@ -1,12 +1,9 @@
 package io.github.lumkit.tweak.services
 
-import android.app.Notification
-import android.graphics.Bitmap
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.model.Const
-import io.github.lumkit.tweak.services.SmartNoticeService.Companion.postNotification
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -53,7 +50,7 @@ class SmartNoticeNotificationListenerService : NotificationListenerService() {
                 filter.filter {
                     sbn.packageName == it && switch && observe
                 }.forEach { _ ->
-                    postNotification(sbn)
+
                 }
             }
         }

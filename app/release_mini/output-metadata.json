@@ -11,9 +11,9 @@
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 25030711,
-      "versionName": "0.0.12-Alpha",
-      "outputFile": "Tweak-0.0.12-Alpha-25030711-RELEASE-MINI.APK"
+      "versionCode": 25032217,
+      "versionName": "0.0.16-Alpha",
+      "outputFile": "Tweak-0.0.16-Alpha-25032217-RELEASE-MINI.APK"
     }
   ],
   "elementType": "File",
@@ -22,14 +22,14 @@
       "minApi": 28,
       "maxApi": 30,
       "baselineProfiles": [
-        "baselineProfiles/1/Tweak-0.0.12-Alpha-25030711-RELEASE-MINI.dm"
+        "baselineProfiles/1/Tweak-0.0.16-Alpha-25032217-RELEASE-MINI.dm"
       ]
     },
     {
       "minApi": 31,
       "maxApi": 2147483647,
       "baselineProfiles": [
-        "baselineProfiles/0/Tweak-0.0.12-Alpha-25030711-RELEASE-MINI.dm"
+        "baselineProfiles/0/Tweak-0.0.16-Alpha-25032217-RELEASE-MINI.dm"
       ]
     }
   ],

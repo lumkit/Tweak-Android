@@ -21,6 +21,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -121,7 +122,8 @@ fun ScreenScaffold(
                 DevelopmentStage.Debug -> {
                     AndroidView(
                         modifier = Modifier.fillMaxSize()
-                            .clip(RoundedCornerShape(1.dp)),
+                            .clip(RoundedCornerShape(1.dp))
+                            .alpha(.38f),
                         factory = {
                             WaterMarkView(it)
                         },
@@ -133,7 +135,8 @@ fun ScreenScaffold(
                 DevelopmentStage.Testing -> {
                     AndroidView(
                         modifier = Modifier.fillMaxSize()
-                            .clip(RoundedCornerShape(1.dp)),
+                            .clip(RoundedCornerShape(1.dp))
+                            .alpha(.38f),
                         factory = {
                             WaterMarkView(it)
                         },

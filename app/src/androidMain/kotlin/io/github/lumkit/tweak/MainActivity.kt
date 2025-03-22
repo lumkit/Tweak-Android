@@ -12,7 +12,6 @@ import io.github.lumkit.tweak.data.CutoutRect
 import io.github.lumkit.tweak.model.Const
 import io.github.lumkit.tweak.ui.local.json
 import io.github.lumkit.tweak.ui.theme.AppTheme
-import io.github.lumkit.tweak.ui.view.SmartNoticeWindow
 import kotlinx.serialization.encodeToString
 
 class MainActivity : ComponentActivity() {
@@ -44,11 +43,9 @@ class MainActivity : ComponentActivity() {
                         )
                     }.toList()
 
-                    SmartNoticeWindow.updateCutout(rectList)
-
                     // 将挖孔保存到本地
                     val json = json.encodeToString(rectList)
-                    TweakApplication.shared.edit(commit = true) {
+                    TweakApplication.shared.edit {
                         putString(Const.SmartNotice.SMART_NOTICE_CUTOUT_RECT_LIST, json)
                     }
                 }

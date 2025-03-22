@@ -289,6 +289,7 @@ class RuntimeModeViewModel(
             Manifest.permission.CHANGE_CONFIGURATION,
             Manifest.permission.WRITE_SECURE_SETTINGS,
             Manifest.permission.SYSTEM_ALERT_WINDOW,
+            Manifest.permission.ACCESS_NOTIFICATION_POLICY,
         )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             requiredPermission.addAll(

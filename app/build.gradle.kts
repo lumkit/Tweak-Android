@@ -21,6 +21,7 @@ kotlin {
 
     sourceSets {
 
+        //noinspection WrongGradleMethod
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
@@ -38,6 +39,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
+            implementation(libs.androidx.material)
 
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
@@ -74,6 +76,8 @@ kotlin {
 //            // MaterialUX https://github.com/lumyuan/MaterialUX
 //            implementation(libs.material.ux.core)
 //            implementation(libs.material.ux.ground.glass.view)
+
+            implementation(libs.glide)
         }
     }
 }
@@ -92,7 +96,7 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = versionCodeFormat.format(Date()).toInt().also { println("version code: $it") }
 //        versionCode = 1
-        versionName = "0.0.12-Alpha"
+        versionName = "0.0.16-Alpha"
 
         renderscriptSupportModeEnabled = true
     }
@@ -166,7 +170,10 @@ android {
         val variant = this
         outputs.all {
             val name =
-                this.filters.find { it.filterType == FilterConfiguration.FilterType.ABI.name }?.identifier
+                //noinspection WrongGradleMethod
+                this.filters.find {
+                    it.filterType == FilterConfiguration.FilterType.ABI.name
+                }?.identifier
             val baseAbiCode = abiCodes[name]
             if (baseAbiCode != null) {
                 //写入cpu架构信息

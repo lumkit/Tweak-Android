@@ -1,5 +1,5 @@
 [versions]
-agp = "8.8.2"
+agp = "8.9.0"
 android-compileSdk = "35"
 android-minSdk = "24"
 android-targetSdk = "35"
@@ -23,7 +23,7 @@ accompanist-systemuicontroller = "0.36.0"
 color-picker = "1.0.0"
 libsu-version = "6.0.0"
 shizuku-version = "13.1.5"
-material-ux = "v1.0.13.2"
+glide = "4.16.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -58,8 +58,7 @@ libsu-nio = { module = "com.github.topjohnwu.libsu:nio", version.ref = "libsu-ve
 shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku-version" }
 shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku-version" }
 androidx-cardview = { module = "androidx.cardview:cardview", version.ref = "cardview" }
-material-ux-core = { module = "com.github.lumyuan.MaterialUX:Core", version.ref = "material-ux" }
-material-ux-ground-glass-view = { module = "com.github.lumyuan.MaterialUX:GroundGlassView", version.ref = "material-ux" }
+glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

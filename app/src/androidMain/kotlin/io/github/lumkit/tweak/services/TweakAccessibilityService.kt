@@ -2,55 +2,73 @@ package io.github.lumkit.tweak.services
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
-import android.content.ComponentName
 import android.content.Context
-import android.media.MediaMetadata
-import android.media.session.MediaController
-import android.media.session.MediaSessionManager
-import android.media.session.PlaybackState
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
-import io.github.lumkit.tweak.services.SmartNoticeService.Companion.startSmartNotice
-import io.github.lumkit.tweak.services.SmartNoticeService.Companion.stopSmartNotice
-import kotlinx.coroutines.runBlocking
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import io.github.lumkit.tweak.ui.screen.notice.model.ChargePlugin
+import io.github.lumkit.tweak.ui.screen.notice.model.MusicPlugin
+import io.github.lumkit.tweak.ui.screen.notice.model.ScreenUnlockPlugin
+import io.github.lumkit.tweak.ui.screen.notice.model.SmartNoticeNotificationPlugin
+import io.github.lumkit.tweak.ui.screen.notice.model.VolumePlugin
+import io.github.lumkit.tweak.ui.view.SmartNoticeFactory
 
 class TweakAccessibilityService : AccessibilityService() {
 
     companion object {
-        var windowManager: WindowManager? = null
-        var mediaSessionManager: MediaSessionManager? = null
-        var componentName: ComponentName? = null
+        var isRunning by mutableStateOf(false)
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+
     }
 
+    private var smartNoticeFactory: SmartNoticeFactory? = null
+
     override fun onInterrupt() {
-        windowManager = null
-        mediaSessionManager = null
+        isRunning = false
+        smartNoticeFactory?.apply {
+            hide()
+            SmartNoticeFactory.removeAllPlugins()
+            unregister()
+        }
+        smartNoticeFactory = null
+    }
+
+    override fun onDestroy() {
+        onInterrupt()
+        super.onDestroy()
     }
 
     override fun onServiceConnected() {
-        windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        serviceInfo = AccessibilityServiceInfo().apply {
+            eventTypes = AccessibilityEvent.TYPE_VIEW_CLICKED or AccessibilityEvent.TYPE_VIEW_FOCUSED
+            feedbackType = AccessibilityServiceInfo.FEEDBACK_SPOKEN
+            flags = AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
+        }
 
-        componentName = ComponentName(
-            this@TweakAccessibilityService,
-            SmartNoticeNotificationListenerService::class.java
-        )
-        mediaSessionManager = getSystemService(Context.MEDIA_SESSION_SERVICE) as MediaSessionManager
+        isRunning = true
 
-        val info = AccessibilityServiceInfo()
-        info.eventTypes =
-            AccessibilityEvent.TYPE_VIEW_CLICKED or AccessibilityEvent.TYPE_VIEW_FOCUSED
-        info.feedbackType = AccessibilityServiceInfo.FEEDBACK_SPOKEN
-        info.flags = AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
-        serviceInfo = info
+        smartNoticeFactory = SmartNoticeFactory(
+            context = this,
+            windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        ).apply {
+            register()
 
-        if (SmartNoticeService.isRunning()) {
-            runBlocking {
-                stopSmartNotice(true)
-            }
-            startSmartNotice()
+            SmartNoticeFactory.installPlugins(
+                mapOf(
+                    // 充电消息插件
+                    ChargePlugin::class to ChargePlugin(this),
+                    // 屏幕解锁插件
+                    ScreenUnlockPlugin::class to ScreenUnlockPlugin(this),
+                    // 响铃模式插件
+                    VolumePlugin::class to VolumePlugin(this),
+                    // 音乐插件
+                    MusicPlugin::class to MusicPlugin(this),
+                )
+            )
         }
     }
 }

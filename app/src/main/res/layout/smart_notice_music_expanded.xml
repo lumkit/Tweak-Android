@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:padding="16dp">
+
+    <io.github.lumkit.tweak.ui.view.BottomAlignedAudioVisualizer
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:id="@+id/visualizer"
+        android:alpha=".34"
+        android:layout_alignParentBottom="true"/>
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical">
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="55dp"
+                android:layout_height="55dp"
+                app:cardBackgroundColor="#FF000000"
+                app:cardCornerRadius="12dp"
+                android:theme="@style/Theme.Material3.Dark.NoActionBar">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:id="@+id/cover"/>
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    app:cardCornerRadius="4dp"
+                    android:layout_gravity="bottom|end"
+                    app:cardBackgroundColor="#00FFFFFF">
+
+                    <androidx.appcompat.widget.AppCompatImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:id="@+id/logo"/>
+
+                </androidx.cardview.widget.CardView>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <Space
+                android:layout_width="16dp"
+                android:layout_height="wrap_content"/>
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/title"
+                    android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                    android:textColor="#FFFFFFFF"
+                    android:singleLine="true"
+                    android:ellipsize="marquee"/>
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/artist"
+                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                    android:textColor="#99FFFFFF"
+                    android:singleLine="true"
+                    android:ellipsize="marquee"/>
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <Space
+                android:layout_width="16dp"
+                android:layout_height="wrap_content"/>
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:id="@+id/minimize"
+                android:src="@drawable/ic_up"
+                android:tint="#FFFFFFFF"/>
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <Space
+            android:layout_width="wrap_content"
+            android:layout_height="16dp"/>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical">
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:id="@+id/previous"
+                android:src="@drawable/ic_play_previous"
+                android:tint="#FFFFFFFF"/>
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"/>
+
+            <RelativeLayout
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:animateLayoutChanges="true"
+                android:id="@+id/playContainer">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:id="@+id/play"
+                    android:src="@drawable/ic_play_start"
+                    android:tint="#FFFFFFFF"/>
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:id="@+id/pause"
+                    android:src="@drawable/ic_play_pause"
+                    android:tint="#FFFFFFFF"
+                    android:visibility="gone"/>
+
+            </RelativeLayout>
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"/>
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:id="@+id/next"
+                android:src="@drawable/ic_play_next"
+                android:tint="#FFFFFFFF"/>
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <Space
+            android:layout_width="wrap_content"
+            android:layout_height="16dp"/>
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="36dp"
+                android:layout_height="wrap_content"
+                android:id="@+id/currentPosition"
+                android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+                android:textColor="#FFFFFFFF"/>
+
+            <Space
+                android:layout_width="12dp"
+                android:layout_height="wrap_content"/>
+
+            <com.google.android.material.slider.Slider
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:id="@+id/slider"
+                android:theme="@style/Theme.Material3.DayNight.NoActionBar"
+                android:layout_weight="1"/>
+
+            <Space
+                android:layout_width="12dp"
+                android:layout_height="wrap_content"/>
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="36dp"
+                android:layout_height="wrap_content"
+                android:id="@+id/duration"
+                android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+                android:gravity="end"
+                android:textColor="#FFFFFFFF" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+</RelativeLayout>

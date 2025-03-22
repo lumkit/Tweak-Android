@@ -97,17 +97,16 @@ fun LoginDialog(
             loadState.watch("login") {
                 when (it) {
                     is LoadState.Fail -> {
-                        viewModel.clearLoadState("login")
                         enabled.value = true
                         withContext(Dispatchers.Main) {
                             Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show()
                         }
+                        viewModel.clearLoadState("login")
                     }
                     is LoadState.Loading -> {
                         enabled.value = false
                     }
                     is LoadState.Success -> {
-                        viewModel.clearLoadState("login")
                         enabled.value = true
                         onDismissRequest()
                         withContext(Dispatchers.Main) {
@@ -116,6 +115,7 @@ fun LoginDialog(
                         LoginViewModel.loginState = true
                         storageStore.putString("username", username)
                         storageStore.putString("password", Aes.encrypt(context, password) ?: "")
+                        viewModel.clearLoadState("login")
                     }
                     null -> Unit
                 }

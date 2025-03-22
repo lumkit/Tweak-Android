@@ -9,11 +9,9 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
-import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.core.app.NotificationCompat
 import androidx.core.net.toUri
-import io.github.lumkit.tweak.MainActivity
 import io.github.lumkit.tweak.R
 import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.common.shell.module.UpdateEngineClient
@@ -64,11 +62,13 @@ class PersistentTaskService : Service() {
                     // 启动灵动通知进程
                     startSmartNoticeService()
                 }
+
                 RuntimeStatus.Shizuku -> {
                     // TODO Shizuku模式下的持久服务
                     // 启动灵动通知进程
                     startSmartNoticeService()
                 }
+
                 RuntimeStatus.Root -> {
                     if (ReusableShells.checkRoot()) {
                         startUpdateEngineClientFollow()
@@ -102,10 +102,11 @@ class PersistentTaskService : Service() {
         updateEngineClient.follow()
     }
 
-    private fun startSmartNoticeService() {
-        if (SmartNoticeService.canStartSmartNotice()) {
-            val intent = Intent(this, SmartNoticeService::class.java)
-            startService(intent)
+    private suspend fun startSmartNoticeService() {
+        // 启动无障碍服务
+        if (TweakApplication.shared.getBoolean(Const.APP_ENABLED_ACCESSIBILITY_SERVICE, false)) {
+            ReusableShells.execSync("settings put secure enabled_accessibility_services ${packageName}/.services.TweakAccessibilityService")
+            ReusableShells.execSync("settings put secure accessibility_enabled 1")
         }
     }
 
@@ -151,7 +152,8 @@ class PersistentTaskService : Service() {
 
                 if (resStatus == R.string.text_status_downloading
                     || resStatus == R.string.text_status_finishing
-                    || resStatus == R.string.text_status_verifying) {
+                    || resStatus == R.string.text_status_verifying
+                ) {
                     builder.setProgress(100, progress.toInt(), false)
                         .setAutoCancel(false)
                         .setOngoing(true)

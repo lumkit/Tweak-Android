@@ -43,6 +43,7 @@
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY"/>
 
     <queries>
         <intent>
@@ -61,7 +62,7 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:roundIcon="@mipmap/ic_tweak_logo_round"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        android:theme="@style/AppTheme">
 
         <activity
             android:name=".MainActivity"
@@ -106,10 +107,6 @@
         </service>
 
         <service android:name=".services.PersistentTaskService"
-            android:enabled="true"
-            android:exported="false"/>
-
-        <service android:name=".services.SmartNoticeService"
             android:enabled="true"
             android:exported="false"/>
 

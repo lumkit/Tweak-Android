@@ -91,5 +91,24 @@
     <string name="text_smart_notice_animation_interpolator_linear">线性动画</string>
     <string name="text_smart_notice_animation_interpolator_overshoot">非线性回弹动画</string>
     <string name="text_smart_notice_animation_interpolator_accelerate_decelerate">非线性加速动画</string>
+    <string name="text_smart_notice_diy_properties">自定义属性</string>
+    <string name="text_smart_notice_offset_x">水平偏移</string>
+    <string name="text_smart_notice_offset_y">垂直偏移</string>
+    <string name="text_smart_notice_must_start_accessibility_service">消息订阅插件未初始化，请先启动无障碍服务吧~😫</string>
+    <string name="text_notice_observe_plugin">订阅消息</string>
+    <string name="text_imitate_power_connected">模拟充电</string>
+    <string name="text_show_imitate_animation">显示对应的动画</string>
+    <string name="text_imitate_power_disconnected">模拟断开充电器</string>
+    <string name="text_smart_notice_display_mode">始终显示</string>
+    <string name="text_smart_notice_display_mode_tips">灵动通知始终显示在屏幕上方</string>
+    <string name="text_smart_notice_observe_screen_unlocked">解锁提示</string>
+    <string name="text_smart_notice_observe_screen_unlocked_tips">屏幕解锁后显示灵动通知</string>
+    <string name="text_unlocked">已解锁</string>
+    <string name="text_smart_notice_observe_volume_changed">情景通知</string>
+    <string name="text_smart_notice_observe_volume_changed_tips">系统切换铃声音量后显示灵动通知</string>
+    <string name="text_do_not_disturn">勿扰模式</string>
+    <string name="text_silent_mode">静音模式</string>
+    <string name="text_volume_normal_mode">响铃模式</string>
+    <string name="text_low_power">电量不足</string>
 
 </resources>
