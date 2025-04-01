@@ -70,6 +70,9 @@ object Const {
         const val SMART_NOTICE_MEDIA_FILTER = "smart_notice_media_filter"
         const val SMART_NOTICE_NOTIFICATION_FILTER = "smart_notice_notification_filter"
 
+        /**
+         * 音乐默认白名单
+         */
         val MEDIA_FILTER_DEFAULT by lazy {
             json.encodeToString(
                 listOf(
@@ -87,7 +90,8 @@ object Const {
                     "com.amazon.music",                          // Amazon Music
                     "com.aspiro.tidal",                          // Tidal
                     "com.clearchannel.iheartradio.controller",     // iHeartRadio
-                    "com.joox.fm"                                // JOOX Music
+                    "com.joox.fm",                                // JOOX Music
+                    "com.luna.music",                            // 汽水音乐
                 )
             )
         }

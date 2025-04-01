@@ -46,7 +46,6 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.net.toUri
-import androidx.core.os.postDelayed
 import io.github.lumkit.tweak.R
 import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.common.status.TweakException
@@ -59,6 +58,7 @@ import io.github.lumkit.tweak.data.SmartNoticeInterpolator
 import io.github.lumkit.tweak.data.SmartNoticeRunningState
 import io.github.lumkit.tweak.data.asInterpolator
 import io.github.lumkit.tweak.model.Const
+import io.github.lumkit.tweak.ui.lifecycle.ComposeViewLifecycleOwner
 import io.github.lumkit.tweak.ui.local.json
 import io.github.lumkit.tweak.ui.screen.ScreenRoute
 import io.github.lumkit.tweak.ui.screen.notice.model.ChargePlugin
@@ -73,7 +73,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
-import java.util.UUID
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -83,7 +82,7 @@ import kotlin.math.roundToInt
 class SmartNoticeFactory(
     val context: AccessibilityService,
     private val windowManager: WindowManager,
-) {
+): ComposeViewLifecycleOwner() {
 
     companion object {
         const val SMART_NOTICE_CHANNEL_ID = "Tweak Smart Notice"
@@ -582,6 +581,7 @@ class SmartNoticeFactory(
 
     private val rootView = RelativeLayout(context).apply {
         this.addView(animatorContainer, animatorContainerParams)
+        attachToDecorView(this)
     }
 
     private fun update() {
@@ -1068,13 +1068,14 @@ class SmartNoticeFactory(
         if (isMediaComponent && !minimize) {
             val plugin = _plugins.value[MusicPlugin::class] as MusicPlugin?
             if (plugin != null && plugin.enableState.value && isMediaComponent) {
-                showMedia(plugin.minimizeBinding.root)
+                showMedia(plugin.minimizeComposeView)
             }
             return
         }
 
         expanded = false
         taskTag = null
+        isMediaComponent = false
 
         cancelAnimators(
             animatorContainerWidthAnimator,

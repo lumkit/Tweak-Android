@@ -3,6 +3,9 @@ package io.github.lumkit.tweak.services.media
 import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.PlaybackState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import io.github.lumkit.tweak.model.LiveData
@@ -14,7 +17,9 @@ class MediaCallback(
 ) : MediaController.Callback() {
 
     private var metadata: MediaMetadata? = null
-    val struct: LiveData<MediaStruct?> = LiveData()
+    var struct by mutableStateOf(
+        MediaStruct()
+    )
 
     init {
         metadata = mediaController.metadata
@@ -82,7 +87,7 @@ class MediaCallback(
     }
 
     private fun updateMediaStruct() {
-        struct.value = (struct.value ?: MediaStruct()).copy(
+        struct = struct.copy(
             packageName = mediaController.packageName,
             title = (metadata?.getText(MediaMetadata.METADATA_KEY_TITLE) ?: "").toString(),
             artist = (metadata?.getText(MediaMetadata.METADATA_KEY_ARTIST) ?: "").toString(),
@@ -91,17 +96,14 @@ class MediaCallback(
         )
 
         mediaController.playbackState?.let {
-            struct.value = struct.value?.copy(
+            struct = struct.copy(
                 playbackState = it
             )
         }
-
-        println("更新")
     }
 
     override fun onSessionDestroyed() {
         super.onSessionDestroyed()
         plugin.factory.minimize()
-        struct.clear()
     }
 }

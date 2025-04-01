@@ -71,6 +71,7 @@ class AudioVisualizer @JvmOverloads constructor(
     }
 
     fun start() {
+        barAmplitudesCurrent = FloatArray(numBars) { .1f }
         animatorSet?.cancel()
         removeCallbacks(updateRunnable)
         post(updateRunnable)

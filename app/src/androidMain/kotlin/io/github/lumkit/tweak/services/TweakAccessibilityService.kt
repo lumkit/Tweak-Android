@@ -11,7 +11,6 @@ import androidx.compose.runtime.setValue
 import io.github.lumkit.tweak.ui.screen.notice.model.ChargePlugin
 import io.github.lumkit.tweak.ui.screen.notice.model.MusicPlugin
 import io.github.lumkit.tweak.ui.screen.notice.model.ScreenUnlockPlugin
-import io.github.lumkit.tweak.ui.screen.notice.model.SmartNoticeNotificationPlugin
 import io.github.lumkit.tweak.ui.screen.notice.model.VolumePlugin
 import io.github.lumkit.tweak.ui.view.SmartNoticeFactory
 
@@ -34,6 +33,10 @@ class TweakAccessibilityService : AccessibilityService() {
             SmartNoticeFactory.removeAllPlugins()
             unregister()
         }
+        smartNoticeFactory?.apply {
+            this.onStop()
+            this.onDestroy()
+        }
         smartNoticeFactory = null
     }
 
@@ -44,7 +47,8 @@ class TweakAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         serviceInfo = AccessibilityServiceInfo().apply {
-            eventTypes = AccessibilityEvent.TYPE_VIEW_CLICKED or AccessibilityEvent.TYPE_VIEW_FOCUSED
+            eventTypes =
+                AccessibilityEvent.TYPE_VIEW_CLICKED or AccessibilityEvent.TYPE_VIEW_FOCUSED
             feedbackType = AccessibilityServiceInfo.FEEDBACK_SPOKEN
             flags = AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
         }
@@ -56,6 +60,9 @@ class TweakAccessibilityService : AccessibilityService() {
             windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         ).apply {
             register()
+            this.onCreate()
+            this.onStart()
+            this.onResume()
 
             SmartNoticeFactory.installPlugins(
                 mapOf(

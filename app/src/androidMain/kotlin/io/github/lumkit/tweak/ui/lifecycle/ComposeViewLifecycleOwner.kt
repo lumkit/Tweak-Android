@@ -13,7 +13,7 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 
-class ComposeViewLifecycleOwner : LifecycleOwner, ViewModelStoreOwner,
+open class ComposeViewLifecycleOwner : LifecycleOwner, ViewModelStoreOwner,
     SavedStateRegistryOwner {
 
     private val lifecycleRegistry: LifecycleRegistry = LifecycleRegistry(this)
