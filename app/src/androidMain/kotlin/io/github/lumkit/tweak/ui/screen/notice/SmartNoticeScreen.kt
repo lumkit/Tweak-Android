@@ -128,7 +128,7 @@ fun SmartNoticeScreen(
                 text = stringResource(R.string.text_smart_notice),
             )
         },
-        stage = DevelopmentStage.Testing
+//        stage = DevelopmentStage.Testing
     ) {
         Column(
             modifier = Modifier

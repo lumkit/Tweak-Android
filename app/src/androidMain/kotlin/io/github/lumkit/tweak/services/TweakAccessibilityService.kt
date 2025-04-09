@@ -8,6 +8,7 @@ import android.view.accessibility.AccessibilityEvent
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import io.github.lumkit.tweak.ui.screen.notice.model.AppNotificationPlugin
 import io.github.lumkit.tweak.ui.screen.notice.model.ChargePlugin
 import io.github.lumkit.tweak.ui.screen.notice.model.MusicPlugin
 import io.github.lumkit.tweak.ui.screen.notice.model.ScreenUnlockPlugin
@@ -74,6 +75,8 @@ class TweakAccessibilityService : AccessibilityService() {
                     VolumePlugin::class to VolumePlugin(this),
                     // 音乐插件
                     MusicPlugin::class to MusicPlugin(this),
+                    // 消息通知
+                    AppNotificationPlugin::class to AppNotificationPlugin(this)
                 )
             )
         }

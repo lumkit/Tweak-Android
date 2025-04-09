@@ -1,9 +1,11 @@
 package io.github.lumkit.tweak.services
 
+import android.content.Intent
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import io.github.lumkit.tweak.TweakApplication
 import io.github.lumkit.tweak.model.Const
+import io.github.lumkit.tweak.ui.screen.notice.model.AppNotificationPlugin
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -50,7 +52,10 @@ class SmartNoticeNotificationListenerService : NotificationListenerService() {
                 filter.filter {
                     sbn.packageName == it && switch && observe
                 }.forEach { _ ->
-
+                    val intent = Intent(AppNotificationPlugin.ACTION_APP_NOTIFICATION)
+                    intent.`package` = packageName
+                    intent.putExtra("sbn", sbn)
+                    sendBroadcast(intent)
                 }
             }
         }
